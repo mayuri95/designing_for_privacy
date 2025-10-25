@@ -1,14 +1,14 @@
 from torch import nn
+import torch
 
 class LinearModel(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
-        # initialize with zero weights
-        self.linear = nn.Linear(input_dim, output_dim)
-        nn.init.zeros_(self.linear.weight)
+        self.weight = nn.Parameter(torch.zeros(input_dim, output_dim))
 
     def forward(self, x):
-        return self.linear(x)
+        return x @ self.weight
+
     
 class MLPModel(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_sizes):

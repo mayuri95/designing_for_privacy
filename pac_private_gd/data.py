@@ -6,6 +6,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 import re
+from ucimlrepo import fetch_ucirepo 
+from sklearn.preprocessing import StandardScaler
+
+
 
 def load_dataset(dataset_name):
     pwd = os.path.dirname(__file__) # current directory of this file data.py
@@ -64,6 +68,45 @@ def load_dataset(dataset_name):
         X_test = X_test[:, non_zero_variance_dimensions]
         y_train = torch.tensor(y_train).view(-1, 1)
         y_test = torch.tensor(y_test).view(-1, 1)
+        X_mean = X_train.mean(0, keepdim=True)
+        X_train = X_train - X_mean
+        X_test = X_test - X_mean
+        num_classes = 2
+    elif dataset_name == 'bank':
+          
+        # fetch dataset 
+        bank_marketing = fetch_ucirepo(id=222) 
+          
+        # data (as pandas dataframes) 
+        X = bank_marketing.data.features 
+        y = bank_marketing.data.targets.iloc[:, 0]
+
+        y = (y.astype(str).str.lower() == "yes").astype(int).to_numpy()
+
+        cat_cols = X.select_dtypes(include=["object", "category"]).columns
+        num_cols = X.columns.difference(cat_cols)
+
+        ct = ColumnTransformer(
+            transformers=[
+                ("num", StandardScaler(with_mean=True, with_std=True), list(num_cols)),
+                ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), list(cat_cols)),
+            ],
+            remainder="drop",
+        )
+        X = ct.fit_transform(X)
+
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+        X_test = torch.tensor(X_test, dtype=torch.float32)
+        X_mean = X_train.mean(0, keepdim=True)
+        X_train = X_train - X_mean
+        X_test = X_test - X_mean
+
+        # shape should be [num_samples, 1]
+        y_train = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
+        y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
         num_classes = 2
         
     elif dataset_name == "adult":
@@ -106,6 +149,9 @@ def load_dataset(dataset_name):
         X_test  = X_test[:, non_zero_variance_dimensions]
         y_train = torch.tensor(y_train.values).view(-1, 1)
         y_test  = torch.tensor(y_test.values).view(-1, 1)
+        X_mean = X_train.mean(0, keepdim=True)
+        X_train = X_train - X_mean
+        X_test = X_test - X_mean
         num_classes = 2
 
     return X_train, y_train, X_test, y_test, num_classes

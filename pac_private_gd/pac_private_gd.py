@@ -53,7 +53,8 @@ def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=Tr
         utils.apply_update_vec(model, model_update)
 
         with torch.no_grad():
-            loss = loss_fn(model(X), y).item() + (mu / 2) * utils.get_param_vec(model).norm().item()**2
+            loss = loss_fn(model(X), y).item()
+            # (mu / 2) * utils.get_param_vec(model).norm().item()**2
             train_loss.append(loss)
 
         if verbose:
