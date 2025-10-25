@@ -56,8 +56,7 @@ for data in datasets:
             np.atleast_2d(X_train[:, dim_ind])), y_train_c)
         opt_ws.append(ridge_model_no_intercept.coef_[0])
 
-    sigma_sq = np.var(y_train)
-    opt_lams = [sigma_sq/opt_ws[ind]**2 for ind in range(len(opt_ws))]
+    opt_lams = [sigma2_hat/opt_ws[ind]**2 for ind in range(len(opt_ws))]
     base_variances = {}
     subsets = []
     all_lams[0] = opt_lams
