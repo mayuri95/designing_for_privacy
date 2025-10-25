@@ -62,8 +62,6 @@ def load_dataset(dataset_name):
         X_train = X_train[:, non_zero_variance_dimensions]
         X_test = torch.tensor(X_test, dtype=torch.float32)
         X_test = X_test[:, non_zero_variance_dimensions]
-        # y_train = torch.tensor(y_train, dtype=torch.long)
-        # shape should be [num_samples, 1]
         y_train = torch.tensor(y_train).view(-1, 1)
         y_test = torch.tensor(y_test).view(-1, 1)
         num_classes = 2
