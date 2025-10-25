@@ -8,6 +8,7 @@ from sklearn.linear_model import Ridge
 from typing import Tuple, Optional, Sequence
 import pickle
 from utils import *
+import sys
 
 TEST_SIZE   = 0.3
 RANDOM_SEED = 42
@@ -15,7 +16,8 @@ NUM_SUBSETS = 128
 NUM_TRIALS = 100
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
-
+C_values = [C_values[int(sys.argv[1])]]
+print(C_values)
 datasets = ['wine', 'census']
 for data in datasets:
     all_mses = {}
@@ -117,5 +119,5 @@ for data in datasets:
             priv_aware_mses.append(mean_squared_error(y_pred_closed, y_test))
         print(f'C={C}, priv aware mse: ', np.mean(priv_aware_mses))
         all_mses[C] = (priv_obl_mses, priv_aware_mses)
-    pickle.dump(all_mses, open(f'data/{data}_mses.pkl', 'wb'))
-    pickle.dump(all_lams, open(f'data/{data}_lams.pkl', 'wb'))
+    pickle.dump(all_mses, open(f'data/C={C}_{data}_mses.pkl', 'wb'))
+    pickle.dump(all_lams, open(f'data/C={C}_{data}_lams.pkl', 'wb'))
