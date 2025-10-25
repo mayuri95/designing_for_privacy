@@ -3,23 +3,22 @@ from pac_private_gd import pac_private_gd
 from utils import find_e0
 
 all_datasets = [
-    'mnist_0_vs_7',
-    'mnist_7_vs_9',
-    'wine_quality',
-    'adult',
-    'mnist'
+    'mnist_0_vs_7', # easy
+    'mnist_7_vs_9', # hard
+    # 'wine_quality', # something weird happens here
+    # 'adult', # something weird happens here
+    # 'mnist' # this one is very slow
 ]
 
 # we will write everything into a csv file, of columns:
 # dataset_name, mu, T, use_e0, mi_budget, privacy_aware, train_loss (this is a list), final_train_loss, test_acc
-print("dataset_name, mu, T, e0_type, inv_mi_budget, privacy_aware, train_loss, final_train_loss, test_acc", flush=True)
+print("dataset_name;mu;T;e0_type;inv_mi_budget;privacy_aware;train_loss;final_train_loss;test_acc", flush=True)
 
 for dataset in all_datasets:
-    for mu in [0.1, 1.0, 10.0]:
-        # compute e0, which is the global optimum
-        e0 = find_e0(dataset, mu)
-        for T in [50]:
-            for e0_type in ['exact', 0.01, 0.1, 1.0]:
+    for mu in [0.1, 1.0, 10.0]: # different level of regularization
+        e0 = find_e0(dataset, mu) # compute e0, which is the global optimum
+        for T in [50]: # fixed number of iterations
+            for e0_type in ['exact', 0.01, 0.1, 1.0]: # different ways to set e0, exact or prior on initial bias
                 for inv_mi_budget in [None, 1, 2, 4, 8, 16, 32, 64, 128, 256]:
                     for privacy_aware in [True, False]:
                         if inv_mi_budget is None and privacy_aware == True:
@@ -34,4 +33,4 @@ for dataset in all_datasets:
                             verbose=False
                         )
                         final_train_loss = train_loss[-1]
-                        print(f"{dataset}, {mu}, {T}, {e0_type}, {inv_mi_budget}, {privacy_aware}, {train_loss}, {final_train_loss}, {test_acc}", flush=True)
+                        print(f"{dataset};{mu};{T};{e0_type};{inv_mi_budget};{privacy_aware};{train_loss};{final_train_loss};{test_acc}", flush=True)
