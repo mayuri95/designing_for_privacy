@@ -35,10 +35,13 @@ for data in datasets:
     X_train = scaler.transform(X_train)
     X_test  = scaler.transform(X_test)
 
+    pca = PCA(whiten=True, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
+    X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
+    X_test  = pca.transform(X_test)
+    n, d = X_train.shape
     y_mean = y_train.mean()
     y_train_c = y_train - y_mean
 
-    n, d = X_train.shape
     rng = np.random.default_rng(RANDOM_SEED)
 
     XtX = X_train.T @ X_train
