@@ -9,6 +9,7 @@ from typing import Tuple, Optional, Sequence
 import pickle
 from utils import *
 import sys
+from sklearn.decomposition import PCA
 
 TEST_SIZE   = 0.3
 RANDOM_SEED = 42
