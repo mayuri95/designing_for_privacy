@@ -131,6 +131,28 @@ def load_wine_quality_red(csv_path: str):
     X = df.drop(columns=["quality"]).to_numpy(dtype=float)
     return X, y
 
+def load_bank():
+    bank_marketing = fetch_ucirepo(id=222) 
+      
+    # data (as pandas dataframes) 
+    X = bank_marketing.data.features 
+    y = bank_marketing.data.targets.iloc[:, 0]
+
+    y = (y.astype(str).str.lower() == "yes").astype(int).to_numpy()
+
+    cat_cols = X.select_dtypes(include=["object", "category"]).columns
+    num_cols = X.columns.difference(cat_cols)
+
+    ct = ColumnTransformer(
+        transformers=[
+            ("num", StandardScaler(with_mean=True, with_std=True), list(num_cols)),
+            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), list(cat_cols)),
+        ],
+        remainder="drop",
+    )
+    X = ct.fit_transform(X)
+    return X, y
+
 
 def ridge_1d(x, y, lam):
     h_s = sum([x[i]**2 for i in range(len(x))])

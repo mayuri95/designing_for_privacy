@@ -14,19 +14,21 @@ from sklearn.decomposition import PCA
 TEST_SIZE   = 0.3
 RANDOM_SEED = 42
 NUM_SUBSETS = 128
-NUM_TRIALS = 100
+NUM_TRIALS = 10
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
 C_values = [C_values[int(sys.argv[1])]]
 print(C_values)
-datasets = ['wine', 'census']
+datasets = ['wine', 'census', 'bank']
 for data in datasets:
     all_mses = {}
     all_lams = {}
     if data == 'wine':
         X, y = load_wine_quality_red("winequality-red.csv")
-    if data == 'census':
+    elif data == 'census':
         X, y = load_adult_census('adult/adult.data')
+    elif data == 'bank':
+        X, y = load_bank()
 
     # Train/test split and standardize X (fit on train)
     X_train, X_test, y_train, y_test = train_test_split(

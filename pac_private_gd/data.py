@@ -51,8 +51,8 @@ def load_dataset(dataset_name):
         num_classes = 2
     
     elif dataset_name == "wine_quality":
-        red_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
-        white_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv"
+        red_url = "winequality-red.csv"
+        white_url = "winequality-white.csv"
         df_red = pd.read_csv(red_url, sep=';')
         df_white = pd.read_csv(white_url, sep=';')
         df = pd.concat([df_red, df_white], ignore_index=True)
@@ -76,11 +76,10 @@ def load_dataset(dataset_name):
           
         # fetch dataset 
         bank_marketing = fetch_ucirepo(id=222) 
-          
+        bank_marketing = pd.read_csv('bank/bank-full.csv', sep=";")
         # data (as pandas dataframes) 
-        X = bank_marketing.data.features 
-        y = bank_marketing.data.targets.iloc[:, 0]
-
+        X = bank_marketing.drop(columns=["y"])   # DataFrame of features (categorical + numeric)
+        y = bank_marketing["y"]                  # Series target: "yes"/"no"
         y = (y.astype(str).str.lower() == "yes").astype(int).to_numpy()
 
         cat_cols = X.select_dtypes(include=["object", "category"]).columns

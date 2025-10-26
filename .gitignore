@@ -3,3 +3,5 @@ old/
 __pycache__/
 .venv/
 output/*
+.DS_STORE
+commands.txt
