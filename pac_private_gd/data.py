@@ -75,7 +75,6 @@ def load_dataset(dataset_name):
     elif dataset_name == 'bank':
           
         # fetch dataset 
-        bank_marketing = fetch_ucirepo(id=222) 
         bank_marketing = pd.read_csv('bank/bank-full.csv', sep=";")
         # data (as pandas dataframes) 
         X = bank_marketing.drop(columns=["y"])   # DataFrame of features (categorical + numeric)

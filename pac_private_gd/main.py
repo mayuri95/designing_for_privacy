@@ -13,21 +13,19 @@ all_datasets = [
 
 # we will write everything into a csv file, of columns:
 # dataset_name, mu, T, use_e0, mi_budget, privacy_aware, train_loss (this is a list), final_train_loss, test_acc
-budgets = [None, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+budgets = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 budgets = [budgets[int(sys.argv[1])]]
-results = {}
 for dataset in all_datasets:
     for mu in [0.1]: # different level of regularization
         e0 = find_e0(dataset, mu) # compute e0, which is the global optimum
         for T in [50]: # fixed number of iterations
             for e0_type in ['exact', 0.01, 0.001, 0.1]: # different ways to set e0, exact or prior on initial bias
+                results = {}
                 for inv_mi_budget in budgets:
                     for privacy_aware in [True, False]:
-                        results[(e0_type, inv_mi_budget, privacy_aware)] = []
+                        results[(inv_mi_budget, privacy_aware)] = []
                         for trial in range(100):
                             print(trial)
-                            if inv_mi_budget is None and privacy_aware == True:
-                                continue # no need to run non-private privacy-aware
                             train_loss, test_acc = pac_private_gd(
                                 dataset_name=dataset,
                                 mu=mu,
@@ -37,5 +35,5 @@ for dataset in all_datasets:
                                 e0=e0 if e0_type == 'exact' else np.ones_like(e0) * e0_type,
                                 verbose=False
                             )
-                            results[(e0_type, inv_mi_budget, privacy_aware)].append((train_loss, test_acc))
+                            results[(inv_mi_budget, privacy_aware)].append((train_loss, test_acc))
                 pickle.dump(results, open(f'data/{dataset}_{inv_mi_budget}_{privacy_aware}_{e0_type}_mses.pkl', 'wb'))

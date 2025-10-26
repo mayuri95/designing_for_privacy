@@ -17,7 +17,7 @@ NUM_SUBSETS = 128
 NUM_TRIALS = 10
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
-C_values = [C_values[int(sys.argv[1])]]
+#C_values = [C_values[int(sys.argv[1])]]
 print(C_values)
 datasets = ['wine', 'census', 'bank']
 for data in datasets:
@@ -66,6 +66,7 @@ for data in datasets:
     subsets = []
     all_lams[0] = opt_lams
     for dim_ind in range(d):
+        print(f'dim ind {dim_ind} {d}')
         opt_lam0 = opt_lams[dim_ind]
         ws = []
         for num_subsets in range(NUM_SUBSETS):
@@ -79,6 +80,7 @@ for data in datasets:
     for C in C_values:
         priv_obl_mses = []
         for trial in range(NUM_TRIALS):
+            print(trial)
             unnoised_ws = []
             release = []
             for dim_ind in range(d):
@@ -109,6 +111,7 @@ for data in datasets:
 
         priv_aware_mses = []
         for trial in range(NUM_TRIALS):
+            print(trial)
             chosen_pts = subsets[np.random.choice(range(len(subsets)))]
             unnoised_ws = []
             release = []

@@ -6,6 +6,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.linear_model import Ridge
 from typing import Tuple, Optional, Sequence
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
+from sklearn.compose import ColumnTransformer
 
 def load_wine_quality_red(csv_path: str):
     df = pd.read_csv(csv_path, sep=";")
@@ -132,12 +134,10 @@ def load_wine_quality_red(csv_path: str):
     return X, y
 
 def load_bank():
-    bank_marketing = fetch_ucirepo(id=222) 
-      
+    bank_marketing = pd.read_csv('pac_private_gd/bank/bank-full.csv', sep=";")
     # data (as pandas dataframes) 
-    X = bank_marketing.data.features 
-    y = bank_marketing.data.targets.iloc[:, 0]
-
+    X = bank_marketing.drop(columns=["y"])   # DataFrame of features (categorical + numeric)
+    y = bank_marketing["y"]                  # Series target: "yes"/"no"
     y = (y.astype(str).str.lower() == "yes").astype(int).to_numpy()
 
     cat_cols = X.select_dtypes(include=["object", "category"]).columns
