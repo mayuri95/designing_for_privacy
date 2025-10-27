@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from pac_private_gd import pac_private_gd
 from utils import find_e0
@@ -9,10 +10,8 @@ dataset_list = [
     'mnist7_vs_9'
 ]
 
-results_df = pd.DataFrame(columns=[
-    'dataset_name', 'mu', 'T', 'use_e0', 'inverse_mi_budget', 'privacy_aware',
-    'train_loss_list', 'final_train_loss', 'test_acc'
-])
+filename = "results.csv"
+write_header = not os.path.exists(filename)
 
 budget_list= [512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
 e0_type_list = ['exact', 0.001, 0.01, 0.1]
@@ -36,7 +35,7 @@ for dataset in dataset_list:
                                 e0=e0 if e0_type == 'exact' else np.ones_like(e0) * e0_type,
                                 verbose=False
                             )
-                            new_row = {
+                            results = {
                                 'dataset_name': dataset,
                                 'mu': mu,
                                 'T': T,
@@ -47,6 +46,7 @@ for dataset in dataset_list:
                                 'final_train_loss': train_loss[-1],
                                 'test_acc': test_acc
                             }
-                            results_df.loc[len(results_df)] = new_row
-
-results_df.to_csv('pac_private_gd_experiments.csv', index=False)
+                            df = pd.DataFrame([results])
+                            df.to_csv(filename, mode='a', index=False, header=write_header)
+                            write_header = False
+                            del df
