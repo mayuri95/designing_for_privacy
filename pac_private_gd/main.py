@@ -14,9 +14,9 @@ results_df = pd.DataFrame(columns=[
     'train_loss_list', 'final_train_loss', 'test_acc'
 ])
 
-budget_list= [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+budget_list= [512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
 e0_type_list = ['exact', 0.001, 0.01, 0.1]
-mu_list = [1]
+mu_list = [0.1, 1.0, 10.0]
 T_list = [50]
 
 for dataset in dataset_list:
@@ -47,6 +47,6 @@ for dataset in dataset_list:
                                 'final_train_loss': train_loss[-1],
                                 'test_acc': test_acc
                             }
-                            results_df = results_df.append(new_row, ignore_index=True)
+                            results_df.loc[len(results_df)] = new_row
 
 results_df.to_csv('pac_private_gd_experiments.csv', index=False)

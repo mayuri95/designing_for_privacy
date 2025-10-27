@@ -23,7 +23,6 @@ def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=Tr
         C = 0 # note even if we are adding no noise, we still do sampling
     else:
         C = d * T / (2.0 * mi_budget) # num_params * T releases in total
-        print(C)
 
     train_loss = []
 
