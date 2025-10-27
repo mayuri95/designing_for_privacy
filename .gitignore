@@ -5,7 +5,6 @@ __pycache__/
 output/*
 .DS_STORE
 commands.txt
-data/*
 orig_data/*
 pac_private_gd/data*
 pac_private_gd/orig_data*
