@@ -1,8 +1,7 @@
 import torch
 from torch.func import functional_call, vmap, grad
 import numpy as np
-from scipy.special import lambertw
-
+from scipy.special import lambertw, gammaln
 import data
 from models import LinearModel
 
@@ -64,6 +63,39 @@ def est_var_1d(random_func, max_iter=1000, tolerance=1e-5):
 
     print(f"Warning: Variance estimation did not converge within max_iter={max_iter}")
     return prev_var
+
+def exact_var_1d(c):
+    """
+    Exact variance of
+        Y = (sum_i m_i * c_i) / (sum_i m_i),
+    where m_i ~ Bernoulli(0.5) i.i.d., and Y=0 when sum_i m_i = 0.
+
+    Uses log-sum-exp vectorization for numerical stability and speed.
+    """
+    c = np.asarray(c, dtype=float)
+    n = c.size
+    a = np.sum(c)
+    b = np.sum(c**2)
+
+    # ----- compute E_invK = E[1/K * 1_{K≥1}] -----
+    k = np.arange(1, n + 1)
+    # log(C(n,k)) = log(n!) - log(k!) - log((n-k)!)
+    log_comb = gammaln(n + 1) - gammaln(k + 1) - gammaln(n - k + 1)
+    log_terms = log_comb - np.log(k) - n * np.log(2)
+
+    # log-sum-exp for numerical stability
+    max_log = np.max(log_terms)
+    E_invK = np.exp(max_log) * np.sum(np.exp(log_terms - max_log))
+
+    # probability K ≥ 1
+    p_nonzero = 1 - 2 ** (-n)
+
+    # ----- compute variance -----
+    term1 = (b * n - a**2) / (n**2 * (n - 1))
+    var_conditional = term1 * (n * E_invK - p_nonzero)
+    var_mean = (a / n)**2 * p_nonzero * (1 - p_nonzero)
+
+    return var_conditional + var_mean
 
 def apply_update_vec(model, update_vector):
     # new weights = old weights + update_vector

@@ -37,7 +37,8 @@ def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=Tr
             def grad_i_fn(): # return a torch scalar
                 return per_sample_grads[np.random.rand(num_features) < 0.5, d_i].mean().item()
             
-            grad_i_var = utils.est_var_1d(grad_i_fn)
+            grad_i_var = utils.exact_var_1d(per_sample_grads[:, d_i])
+            # grad_i_var = utils.est_var_1d(grad_i_fn)
 
             if privacy_aware:
                 eta_i = utils.optimal_eta(mu=mu, T=T, C=C, e0=e0[d_i], var=grad_i_var)
@@ -54,7 +55,7 @@ def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=Tr
 
         with torch.no_grad():
             loss = loss_fn(model(X), y).item()
-            # (mu / 2) * utils.get_param_vec(model).norm().item()**2
+            loss += (mu / 2) * utils.get_param_vec(model).norm().item()**2
             train_loss.append(loss)
 
         if verbose:
