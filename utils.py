@@ -9,12 +9,15 @@ from typing import Tuple, Optional, Sequence
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 
-def load_wine_quality_red(csv_path: str):
-    df = pd.read_csv(csv_path, sep=";")
-    if "quality" not in df.columns:
-        raise ValueError("Expected a 'quality' column in winequality-red.csv")
+def load_wine_quality():
+    red_url = "winequality-red.csv"
+    white_url = "winequality-white.csv"
+    df_red = pd.read_csv(red_url, sep=';')
+    df_white = pd.read_csv(white_url, sep=';')
+    df = pd.concat([df_red, df_white], ignore_index=True)
+    X = df.drop("quality", axis=1).to_numpy(dtype=float)
     y = df["quality"].to_numpy(dtype=float)
-    X = df.drop(columns=["quality"]).to_numpy(dtype=float)
+
     return X, y
 
 def load_adult_census(

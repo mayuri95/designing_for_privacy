@@ -14,17 +14,17 @@ from sklearn.decomposition import PCA
 TEST_SIZE   = 0.3
 RANDOM_SEED = 42
 NUM_SUBSETS = 128
-NUM_TRIALS = 10
+NUM_TRIALS = 100
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
 #C_values = [C_values[int(sys.argv[1])]]
 print(C_values)
-datasets = ['wine', 'census', 'bank']
+datasets = ['wine']
+datasets = [datasets[int(sys.argv[1])]]
+all_mses, all_lams = {}, {}
 for data in datasets:
-    all_mses = {}
-    all_lams = {}
     if data == 'wine':
-        X, y = load_wine_quality_red("winequality-red.csv")
+        X, y = load_wine_quality()
     elif data == 'census':
         X, y = load_adult_census('adult/adult.data')
     elif data == 'bank':
@@ -38,6 +38,9 @@ for data in datasets:
     X_train = scaler.transform(X_train)
     X_test  = scaler.transform(X_test)
 
+    pca = PCA(whiten=True, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
+    X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
+    X_test  = pca.transform(X_test)
     n, d = X_train.shape
     y_mean = y_train.mean()
     y_train_c = y_train - y_mean
@@ -125,5 +128,5 @@ for data in datasets:
             priv_aware_mses.append(mean_squared_error(y_pred_closed, y_test))
         print(f'C={C}, priv aware mse: ', np.mean(priv_aware_mses))
         all_mses[C] = (priv_obl_mses, priv_aware_mses)
-    pickle.dump(all_mses, open(f'data/C={C}_{data}_mses.pkl', 'wb'))
-    pickle.dump(all_lams, open(f'data/C={C}_{data}_lams.pkl', 'wb'))
+        pickle.dump(all_mses, open(f'data/C={C}_{data}_mses.pkl', 'wb'))
+        pickle.dump(all_lams, open(f'data/C={C}_{data}_lams.pkl', 'wb'))

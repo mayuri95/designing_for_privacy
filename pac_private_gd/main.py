@@ -5,8 +5,7 @@ import sys
 import pickle
 
 all_datasets = [
-    'wine_quality', # something weird happens here
-    'bank'
+    'wine_quality'
     # 'adult', # something weird happens here
     # 'mnist' # this one is very slow
 ]
@@ -14,7 +13,8 @@ all_datasets = [
 # we will write everything into a csv file, of columns:
 # dataset_name, mu, T, use_e0, mi_budget, privacy_aware, train_loss (this is a list), final_train_loss, test_acc
 budgets = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-budgets = [budgets[int(sys.argv[1])]]
+start_ind = int(sys.argv[1])
+budgets = budgets[start_ind: start_ind+2]
 for dataset in all_datasets:
     for mu in [0.1]: # different level of regularization
         e0 = find_e0(dataset, mu) # compute e0, which is the global optimum
@@ -36,4 +36,4 @@ for dataset in all_datasets:
                                 verbose=False
                             )
                             results[(inv_mi_budget, privacy_aware)].append((train_loss, test_acc))
-                pickle.dump(results, open(f'data/{dataset}_{inv_mi_budget}_{privacy_aware}_{e0_type}_mses.pkl', 'wb'))
+                pickle.dump(results, open(f'data/{dataset}_{e0_type}_{budgets}_mses.pkl', 'wb'))
