@@ -25,7 +25,7 @@ all_mses, all_lams = {}, {}
 for data in datasets:
     if data == 'wine_red':
         X, y = load_wine_quality(red=True)
-    else:
+    elif data == 'wine_white':
         X, y = load_wine_quality(red=False)
     elif data == 'census':
         X, y = load_adult_census('adult/adult.data')
