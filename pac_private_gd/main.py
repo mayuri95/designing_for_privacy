@@ -3,20 +3,29 @@ import numpy as np
 from pac_private_gd import pac_private_gd
 from utils import find_e0
 import pandas as pd
+import random
+import string
+import os
+
+pwd = os.path.dirname(os.path.abspath(__file__))
+output_dir = os.path.join(pwd, 'results')
+os.makedirs(output_dir, exist_ok=True)
 
 dataset_list = [
     'bank',
-    'mnist0_vs_7',
-    'mnist7_vs_9'
+    'mnist_0_vs_7',
+    'mnist_7_vs_9'
 ]
 
-filename = "results.csv"
+random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+filename = os.path.join(output_dir, f'{random_string}.csv')
 write_header = not os.path.exists(filename)
 
-budget_list= [512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
-e0_type_list = ['exact', 0.001, 0.01, 0.1]
-mu_list = [0.1, 1.0, 10.0]
+budget_list= [1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
+e0_type_list = ['exact', 0.001, 0.01]
+mu_list = [1.0]
 T_list = [50]
+num_trials = 10
 
 for dataset in dataset_list:
     for mu in mu_list:
@@ -25,8 +34,8 @@ for dataset in dataset_list:
             for e0_type in e0_type_list:
                 for inv_mi_budget in budget_list:
                     for privacy_aware in [True, False]:
-                        for _ in range(100):
-                            train_loss, test_acc = pac_private_gd(
+                        for _ in range(num_trials):
+                            train_loss, cla_loss, test_acc = pac_private_gd(
                                 dataset_name=dataset,
                                 mu=mu,
                                 T=T,
@@ -43,6 +52,7 @@ for dataset in dataset_list:
                                 'inverse_mi_budget': inv_mi_budget,
                                 'privacy_aware': privacy_aware,
                                 'train_loss_list': train_loss,
+                                'cla_loss_list': cla_loss,
                                 'final_train_loss': train_loss[-1],
                                 'test_acc': test_acc
                             }

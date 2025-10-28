@@ -25,6 +25,7 @@ def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=Tr
         C = d * T / (2.0 * mi_budget) # num_params * T releases in total
 
     train_loss = []
+    cla_loss = [] # classification loss
 
     for i in range(T):
         per_sample_grads = utils.get_per_sample_grads(model, loss_fn, X, y, mu).cpu().numpy()
@@ -54,6 +55,7 @@ def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=Tr
 
         with torch.no_grad():
             loss = loss_fn(model(X), y).item()
+            cla_loss.append(loss)
             loss += (mu / 2) * utils.get_param_vec(model).norm().item()**2
             train_loss.append(loss)
 
@@ -70,4 +72,4 @@ def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=Tr
         y_pred_labels = torch.argmax(y_pred, dim=1).view(-1, 1)
     test_acc = (y_pred_labels == y_test).float().mean().item()
 
-    return train_loss, test_acc
+    return train_loss, cla_loss, test_acc
