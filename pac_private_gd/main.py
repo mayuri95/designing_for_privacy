@@ -6,6 +6,7 @@ import pandas as pd
 import random
 import string
 import os
+import data
 
 pwd = os.path.dirname(os.path.abspath(__file__))
 output_dir = os.path.join(pwd, 'results')
@@ -28,15 +29,20 @@ T_list = [50]
 num_trials = 10
 
 for dataset in dataset_list:
+    X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     for mu in mu_list:
-        e0 = find_e0(dataset, mu)
+        e0 = find_e0(X, y, num_classes, mu)
         for T in [50]:
             for e0_type in e0_type_list:
                 for inv_mi_budget in budget_list:
                     for privacy_aware in [True, False]:
                         for _ in range(num_trials):
                             train_loss, cla_loss, test_acc = pac_private_gd(
-                                dataset_name=dataset,
+                                X=X,
+                                y=y,
+                                X_test=X_test,
+                                y_test=y_test,
+                                num_classes=num_classes,
                                 mu=mu,
                                 T=T,
                                 mi_budget=1/inv_mi_budget if inv_mi_budget is not None else None,
@@ -60,3 +66,5 @@ for dataset in dataset_list:
                             df.to_csv(filename, mode='a', index=False, header=write_header)
                             write_header = False
                             del df
+                            del results
+    del X, y, X_test, y_test

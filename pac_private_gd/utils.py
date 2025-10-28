@@ -129,8 +129,8 @@ def optimal_eta(mu, T, C, e0, var):
         
     return eta
     
-def find_e0(dataset_name, mu):
-    X, y, _, _, num_classes = data.load_dataset(dataset_name)
+def find_e0(X, y, num_classes, mu):
+    # X, y, _, _, num_classes = data.load_dataset(dataset_name)
     model = LinearModel(X.shape[1], num_classes if num_classes > 2 else 1) # logistic/softmax regression
     if num_classes == 2:
         loss_fn = torch.nn.BCEWithLogitsLoss()

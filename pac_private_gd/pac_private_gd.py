@@ -5,9 +5,9 @@ import data
 from models import LinearModel
 import utils
 
-def pac_private_gd(dataset_name, mu, T, mi_budget, privacy_aware, e0, verbose=True):
+def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_aware, e0, verbose=True):
 
-    X, y, X_test, y_test, num_classes = data.load_dataset(dataset_name)
+    # X, y, X_test, y_test, num_classes = data.load_dataset(dataset_name)
     num_features = X.shape[0]
 
     model = LinearModel(X.shape[1], num_classes if num_classes > 2 else 1)
