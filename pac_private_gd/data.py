@@ -67,7 +67,8 @@ def load_dataset(dataset_name):
 
     elif dataset_name == 'bank':
         # fetch dataset
-        bank_marketing = pd.read_csv('bank/bank-full.csv', sep=";")
+        # bank_marketing = pd.read_csv('bank/bank-full.csv', sep=";")
+        bank_marketing = pd.read_csv(os.path.join(pwd, 'bank', 'bank-full.csv'), sep=";")
         # data (as pandas dataframes)
         # DataFrame of features (categorical + numeric)
         X = bank_marketing.drop(columns=["y"])
