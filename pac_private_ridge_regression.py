@@ -118,11 +118,11 @@ for lam_val in lams:
                 assert lam_val[0] == 'exact'
                 mi_to_opt = lam_val[1]
                 if mi_to_opt != 0:
-                    correction_factor = (2*mi_to_opt)
+                    correction_factor = 1./(2*mi_to_opt)
             else:
                 correction_factor = 0
             correction_factor += 1
-            priv_aware_lam = [(C+1) * correction_factor*opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
+            priv_aware_lam = [(C+1)*opt_lams[dim_ind] / correction_factor for dim_ind in range(len(opt_lams))]
             all_lams[C] = priv_aware_lam
             for dim_ind in range(d):
                 ws = []
