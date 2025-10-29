@@ -17,7 +17,7 @@ NUM_SUBSETS = 128
 NUM_TRIALS = 100
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
-
+C_values = [128., 256., 512.]
 datasets = ['wine_white', 'wine_red', 'housing']
 
 lams = [('exact', 0.), ('exact', 1/16), ('exact', 1/1024), 1.0, 0.1]
@@ -71,10 +71,10 @@ for lam_val in lams:
             assert lam_val[0] == 'exact'
             mi_to_opt = lam_val[1]
             if mi_to_opt != 0:
-                C = 1/(2*mi_to_opt)
+                base_C = 1/(2*mi_to_opt)
             else:
-                C = 0
-            opt_lams = [(C+1)*sigma2_hat/opt_ws[ind]**2 for ind in range(len(opt_ws))]
+                base_C = 0
+            opt_lams = [(base_C+1)*sigma2_hat/opt_ws[ind]**2 for ind in range(len(opt_ws))]
         else:
             opt_lams = [lam_val for ind in range(len(opt_ws))]
         base_variances = {}
