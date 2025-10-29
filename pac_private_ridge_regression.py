@@ -16,10 +16,8 @@ RANDOM_SEED = 42
 NUM_SUBSETS = 128
 NUM_TRIALS = 100
 
- # 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
-#C_values = [C_values[int(sys.argv[1])]]
-# print(C_values)
+
 datasets = ['wine_white', 'wine_red', 'housing']
 
 lams = [('exact', 0.), ('exact', 1/16), ('exact', 1/1024), 1.0, 0.1]
@@ -124,6 +122,8 @@ for lam_val in lams:
             else:
                 correction_factor = 0
             correction_factor += 1
+            if mi_to_opt == 1/(2*C):
+                assert correction_factor == C+1.
             priv_aware_lam = [(C+1)*opt_lams[dim_ind] / correction_factor for dim_ind in range(len(opt_lams))]
             all_lams[C] = priv_aware_lam
             for dim_ind in range(d):
