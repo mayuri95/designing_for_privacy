@@ -22,8 +22,8 @@ C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0
 # print(C_values)
 datasets = ['wine_white', 'wine_red', 'housing']
 
-lams = [('exact', 1/16), ('exact', 1/1024), ('exact', 0), 1.0, 0.1]
-# datasets = [datasets[int(sys.argv[1])]]
+lams = [('exact', 0.), ('exact', 1/16), ('exact', 1/1024), 1.0, 0.1]
+datasets = [datasets[int(sys.argv[1])]]
 
 for lam_val in lams:    
     for data in datasets:
@@ -119,6 +119,8 @@ for lam_val in lams:
                 mi_to_opt = lam_val[1]
                 if mi_to_opt != 0:
                     correction_factor = 1./(2*mi_to_opt)
+                else:
+                    correction_factor = 0.
             else:
                 correction_factor = 0
             correction_factor += 1
