@@ -16,9 +16,9 @@ RANDOM_SEED = 42
 NUM_SUBSETS = 128
 NUM_TRIALS = 100
 
-C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
 C_values = [128., 256., 512.]
-datasets = ['wine_white', 'wine_red', 'housing']
+# 'wine_red', 'housing'
+datasets = ['wine_white', ]
 
 lams = [('exact', 0.), ('exact', 1/16), ('exact', 1/1024), 1.0, 0.1]
 datasets = [datasets[int(sys.argv[1])]]
@@ -112,6 +112,7 @@ for lam_val in lams:
 
 
             variances = {}
+            mi_to_opt = None
             if type(lam_val) == tuple:
                 assert lam_val[0] == 'exact'
                 mi_to_opt = lam_val[1]
