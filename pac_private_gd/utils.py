@@ -128,23 +128,26 @@ def optimal_eta(mu, T, C, e0, var):
         eta = 1/alpha * (a - lambertw(np.exp(a)).real)
         
     return eta
-    
+
 def find_e0(X, y, num_classes, mu):
-    # X, y, _, _, num_classes = data.load_dataset(dataset_name)
     model = LinearModel(X.shape[1], num_classes if num_classes > 2 else 1) # logistic/softmax regression
     if num_classes == 2:
         loss_fn = torch.nn.BCEWithLogitsLoss()
     else:
         loss_fn = torch.nn.CrossEntropyLoss()
+
+    optimizer = torch.optim.LBFGS(model.parameters())
     
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, weight_decay=mu)
-    for t in range(1000):
+    def closure():
         optimizer.zero_grad()
         outputs = model(X)
         loss = loss_fn(outputs, y)
+        loss += 0.5 * mu * sum(torch.sum(param ** 2) for param in model.parameters())
         loss.backward()
-        optimizer.step()
+        return loss
+    
+    for t in range(1000):
+        optimizer.step(closure)
 
     optimal_w = get_param_vec(model).detach().numpy()
-
     return optimal_w
