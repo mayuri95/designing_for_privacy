@@ -9,7 +9,7 @@ import os
 import data
 
 pwd = os.path.dirname(os.path.abspath(__file__))
-output_dir = os.path.join(pwd, 'results')
+output_dir = os.path.join(pwd, 'new_results')
 os.makedirs(output_dir, exist_ok=True)
 
 dataset_list = [
@@ -26,7 +26,7 @@ budget_list= [1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
 e0_type_list = ['exact', 0.001, 0.01]
 mu_list = [1.0]
 T_list = [50]
-num_trials = 10
+num_trials = 25
 
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)

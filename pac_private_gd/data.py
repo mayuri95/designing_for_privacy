@@ -95,13 +95,12 @@ def load_dataset(dataset_name):
             X, y, test_size=0.2, random_state=42, stratify=y)
         X_train = ct.fit_transform(X_train)
         X_test = ct.transform(X_test)
-
-        pca = PCA(whiten=True, random_state=42)
-        X_train = torch.tensor(pca.fit_transform(X_train), dtype=torch.float32)
-        X_test = torch.tensor(pca.transform(X_test), dtype=torch.float32)
-        
         y_train = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
         y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
         num_classes = 2
+
+    pca = PCA(random_state=42) # keep all dimensions but make them uncorrelated
+    X_train = torch.tensor(pca.fit_transform(X_train), dtype=torch.float32)
+    X_test = torch.tensor(pca.transform(X_test), dtype=torch.float32)
 
     return X_train, y_train, X_test, y_test, num_classes
