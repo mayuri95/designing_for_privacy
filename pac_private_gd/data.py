@@ -90,7 +90,7 @@ def load_dataset(dataset_name):
                 ("num", StandardScaler(with_mean=True, with_std=True), list(num_cols)),
                 ("cat", Pipeline([
                     ("onehot", OneHotEncoder(
-                        handle_unknown="ignore", sparse_output=False)),
+                        handle_unknown="ignore", sparse_output=False, drop='first')),
                     ("scaler", StandardScaler(with_mean=True, with_std=False)),
                 ]),
                     list(cat_cols)),
