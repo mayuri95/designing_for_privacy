@@ -5,7 +5,7 @@ import data
 from models import LinearModel
 import utils
 
-def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_aware, e0, verbose=True):
+def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_aware, e0, rng, verbose=True):
 
     # X, y, X_test, y_test, num_classes = data.load_dataset(dataset_name)
     num_features = X.shape[0]

@@ -27,6 +27,54 @@ T_list = [50]
 num_trials = 10
 e0 = 'exact'
 
+import numpy as np
+import torch
+import random
+import os
+
+def stable_training_env(seed: int = 42, precision: str = "float64", verbose: bool = False):
+    """
+    Enforces deterministic RNG, dtype, and numerical precision across NumPy / Torch / SciPy / sklearn.
+    Use this at the start of any training run to get reproducible results across library versions.
+    """
+
+    # ---- Seed everything reproducibly ----
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+    # ---- Deterministic algorithms (Torch) ----
+    torch.use_deterministic_algorithms(True, warn_only=True)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cuda.matmul.allow_tf32 = False
+
+    # ---- Default precision ----
+    if precision == "float64":
+        torch.set_default_dtype(torch.float64)
+        np.set_printoptions(precision=8, suppress=True)
+    elif precision == "float32":
+        torch.set_default_dtype(torch.float32)
+        np.set_printoptions(precision=6, suppress=True)
+    else:
+        raise ValueError("precision must be 'float64' or 'float32'")
+
+    # ---- NumPy numerical guards ----
+    np.seterr(all="raise")
+
+    # ---- Control randomness sources ----
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"  # required for deterministic torch.cuda ops
+
+    if verbose:
+        print(f"[stable_training_env] seed={seed}, precision={precision}, deterministic=True")
+        print(f"NumPy {np.__version__}, Torch {torch.__version__}")
+
+    # ---- Return a stable RNG for NumPy (new API) ----
+    return np.random.default_rng(seed)
+rng = stable_training_env(seed=42, precision="float64", verbose=True)
+
 
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
@@ -36,6 +84,7 @@ for dataset in dataset_list:
             for e0_type in e0_type_list:
                 for inv_mi_budget in budget_list:
                     for privacy_aware in [True, False]:
+                        test_accs = []
                         for _ in range(num_trials):
                             train_loss, cla_loss, test_acc = pac_private_gd(
                                 X=X,
@@ -48,7 +97,8 @@ for dataset in dataset_list:
                                 mi_budget=1/inv_mi_budget if inv_mi_budget is not None else None,
                                 privacy_aware=privacy_aware,
                                 e0=e0 if e0_type == 'exact' else np.ones_like(e0) * e0_type,
-                                verbose=False
+                                verbose=False,
+                                rng=rng
                             )
                             results = {
                                 'dataset_name': dataset,
@@ -67,5 +117,7 @@ for dataset in dataset_list:
                             write_header = False
                             del df
                             del results
+                            test_accs.append(test_acc)
                             print(privacy_aware, test_acc)
+                        print(privacy_aware,np.average(test_accs))
     del X, y, X_test, y_test
