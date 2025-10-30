@@ -4,6 +4,7 @@ import numpy as np
 from scipy.special import lambertw, gammaln
 import data
 from models import LinearModel
+# global_rng.py
 
 def get_param_vec(model):
     params = []
@@ -13,16 +14,16 @@ def get_param_vec(model):
 
 def get_per_sample_grads(model, loss_fn, X, y, l2_lambda=0.0):
     torch.set_grad_enabled(True)
-    torch.set_default_dtype(torch.float64)
+    torch.set_default_dtype(torch.float32)
 
-    X = X.to(torch.float64)
+    X = X.to(torch.float32)
     if isinstance(loss_fn, torch.nn.BCEWithLogitsLoss):
-        y = y.to(torch.float64)
+        y = y.to(torch.float32)
     else:
         y = y.to(torch.long)
-    model = model.to(torch.float64)
-    params = {k: v.detach().clone().to(torch.float64) for k, v in model.named_parameters()}
-    buffers = {k: v.detach().clone().to(torch.float64) for k, v in model.named_buffers()}
+    model = model.to(torch.float32)
+    params = {k: v.detach().clone().to(torch.float32) for k, v in model.named_parameters()}
+    buffers = {k: v.detach().clone().to(torch.float32) for k, v in model.named_buffers()}
 
     def compute_loss(params, buffers, sample, target):
         preds = functional_call(model, (params, buffers), (sample.unsqueeze(0),))
@@ -42,7 +43,7 @@ def get_per_sample_grads(model, loss_fn, X, y, l2_lambda=0.0):
 
     if l2_lambda > 0:
         with torch.no_grad():
-            w_vec = torch.cat([p.reshape(-1) for p in model.parameters()]).to(torch.float64)
+            w_vec = torch.cat([p.reshape(-1) for p in model.parameters()]).to(torch.float32)
             reg_grad = l2_lambda * w_vec
         grads_flat = grads_flat + reg_grad.unsqueeze(0)
 
@@ -151,8 +152,8 @@ def optimal_eta(mu, T, C, e0, var):
     return eta
 
 def find_e0(X, y, num_classes, mu):
-    X = X.to(torch.float64)
-    y = y.to(torch.float64 if num_classes == 2 else torch.long)
+    X = X.to(torch.float32)
+    y = y.to(torch.float32 if num_classes == 2 else torch.long)
     model = LinearModel(X.shape[1], num_classes if num_classes > 2 else 1) # logistic/softmax regression
     if num_classes == 2:
         loss_fn = torch.nn.BCEWithLogitsLoss()

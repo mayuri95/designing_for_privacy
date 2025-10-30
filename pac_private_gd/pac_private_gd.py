@@ -5,6 +5,14 @@ import data
 from models import LinearModel
 import utils
 
+# global_rng.py
+import numpy as np, torch
+
+def make_rng(seed=42):
+    rng = np.random.Generator(np.random.PCG64(seed))
+    torch.manual_seed(seed)
+    return rng
+
 def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_aware, e0, rng, verbose=True):
 
     # X, y, X_test, y_test, num_classes = data.load_dataset(dataset_name)
@@ -35,7 +43,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
         for d_i in range(d):
             
             def grad_i_fn(): # return a torch scalar
-                return per_sample_grads[np.random.rand(num_features) < 0.5, d_i].mean().item()
+                return per_sample_grads[rng.random(num_features) < 0.5, d_i].mean().item()
             
             grad_i_var = utils.exact_var_1d(per_sample_grads[:, d_i])
             # grad_i_var = utils.est_var_1d(grad_i_fn)
@@ -47,7 +55,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
 
             grad_i = grad_i_fn()
 
-            grad_i +=  np.sqrt(C * grad_i_var) * np.random.randn()
+            grad_i +=  np.sqrt(C * grad_i_var) * rng.standard_normal()
 
             model_update[d_i] = -eta_i * grad_i
 

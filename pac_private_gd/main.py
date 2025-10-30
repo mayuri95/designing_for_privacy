@@ -24,7 +24,7 @@ budget_list= [1]
 e0_type_list = ['exact']
 mu_list = [0.0001]
 T_list = [50]
-num_trials = 10
+num_trials = 3
 e0 = 'exact'
 
 import numpy as np
@@ -72,8 +72,10 @@ def stable_training_env(seed: int = 42, precision: str = "float64", verbose: boo
         print(f"NumPy {np.__version__}, Torch {torch.__version__}")
 
     # ---- Return a stable RNG for NumPy (new API) ----
-    return np.random.default_rng(seed)
-rng = stable_training_env(seed=42, precision="float64", verbose=True)
+    rng = np.random.Generator(np.random.PCG64(seed))
+    torch.manual_seed(seed)
+    return rng
+rng = stable_training_env(seed=42, precision="float32", verbose=True)
 
 
 for dataset in dataset_list:

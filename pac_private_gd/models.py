@@ -7,7 +7,7 @@ class LinearModel(nn.Module):
         self.weight = nn.Parameter(torch.zeros(input_dim, output_dim))
 
     def forward(self, x):
-        x = x.to(torch.float64)
+        x = x.to(torch.float32)
         return x @ self.weight
 
     
