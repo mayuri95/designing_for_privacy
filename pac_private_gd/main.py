@@ -13,20 +13,20 @@ output_dir = os.path.join(pwd, 'new_results')
 os.makedirs(output_dir, exist_ok=True)
 
 dataset_list = [
-    'bank',
-    'mnist_0_vs_7',
-    'mnist_7_vs_9'
+    'bank'
 ]
 
 random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 filename = os.path.join(output_dir, f'{random_string}.csv')
 write_header = not os.path.exists(filename)
 
-budget_list= [1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]
-e0_type_list = ['exact', 0.001, 0.01]
-mu_list = [1.0]
+budget_list= [1]
+e0_type_list = ['exact']
+mu_list = [0.0001]
 T_list = [50]
-num_trials = 50
+num_trials = 10
+e0 = 'exact'
+
 
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
@@ -67,4 +67,5 @@ for dataset in dataset_list:
                             write_header = False
                             del df
                             del results
+                            print(privacy_aware, test_acc)
     del X, y, X_test, y_test
