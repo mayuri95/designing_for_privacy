@@ -2,8 +2,9 @@ import torch
 from torch.func import functional_call, vmap, grad
 import numpy as np
 from scipy.special import lambertw, gammaln
-import data
+
 from models import LinearModel
+from sklearn.decomposition import PCA
 
 def get_param_vec(model):
     params = []
@@ -151,3 +152,19 @@ def find_e0(X, y, num_classes, mu):
 
     optimal_w = get_param_vec(model).detach().numpy()
     return optimal_w
+
+# Whiten the data using PCA, and drop the zero-variance dimensions
+def pca(X_train, X_test, whiten, tol=1e-6):
+    pca = PCA(whiten=False, random_state=42)
+    X_train_pca = pca.fit_transform(X_train)
+    # get the non-zero eigenvalue components
+    non_zero_var_indices = pca.explained_variance_ > tol
+    X_train_pca = X_train_pca[:, non_zero_var_indices]
+    X_test_pca = pca.transform(X_test)
+    X_test_pca = X_test_pca[:, non_zero_var_indices]
+    if whiten:
+        X_train_whitened = X_train_pca / np.sqrt(pca.explained_variance_[non_zero_var_indices])
+        X_test_whitened = X_test_pca / np.sqrt(pca.explained_variance_[non_zero_var_indices])
+        return X_train_whitened, X_test_whitened
+    else:
+        return X_train_pca, X_test_pca

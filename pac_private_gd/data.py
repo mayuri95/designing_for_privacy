@@ -8,8 +8,7 @@ from sklearn.compose import ColumnTransformer
 import re
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.decomposition import PCA
-
+from utils import pca
 
 def load_dataset(dataset_name):
     pwd = os.path.dirname(__file__)  # current directory of this file data.py
@@ -21,21 +20,17 @@ def load_dataset(dataset_name):
             root=data_dir, train=False, download=True)
 
         X_train = train_dataset.data.float().view(-1, 28*28) / 255.0
-        non_zero_variance_dimensions = torch.std(X_train, dim=0) > 0
-        X_train = X_train[:, non_zero_variance_dimensions]
         X_train_mean = X_train.mean(dim=0, keepdim=True)
-        X_train_std = X_train.std(dim=0, keepdim=True)
-        X_train = (X_train - X_train_mean) / X_train_std
+        X_train = X_train - X_train_mean
         y_train = train_dataset.targets.view(-1, 1)
 
         X_test = test_dataset.data.float().view(-1, 28*28) / 255.0
-        X_test = X_test[:, non_zero_variance_dimensions]
-        X_test = (X_test - X_train_mean) / X_train_std
+        X_test = X_test - X_train_mean
         y_test = test_dataset.targets.view(-1, 1)
 
-        pca = PCA(random_state=42) # keep all dimensions but make them uncorrelated
-        X_train = torch.tensor(pca.fit_transform(X_train), dtype=torch.float32)
-        X_test = torch.tensor(pca.transform(X_test), dtype=torch.float32)
+        X_train, X_test = pca(X_train.numpy(), X_test.numpy(), whiten=False)
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+        X_test = torch.tensor(X_test, dtype=torch.float32)
 
         num_classes = 10
 
@@ -55,21 +50,19 @@ def load_dataset(dataset_name):
             test_dataset.targets == class_b)
         X_train = train_dataset.data[train_mask].float(
         ).view(-1, 28*28) / 255.0
-        non_zero_variance_dimensions = torch.std(X_train, dim=0) > 0
-        X_train = X_train[:, non_zero_variance_dimensions]
         X_train_mean = X_train.mean(dim=0, keepdim=True)
-        X_train_std = X_train.std(dim=0, keepdim=True)
-        X_train = (X_train - X_train_mean) / X_train_std
+        X_train = X_train - X_train_mean
         y_train = train_dataset.targets[train_mask]
         y_train = (y_train == class_b).float().view(-1, 1)
         X_test = test_dataset.data[test_mask].float().view(-1, 28*28) / 255.0
-        X_test = X_test[:, non_zero_variance_dimensions]
-        X_test = (X_test - X_train_mean) / X_train_std
+        X_test = X_test - X_train_mean
         y_test = test_dataset.targets[test_mask]
         y_test = (y_test == class_b).float().view(-1, 1)
-        pca = PCA(random_state=42) # keep all dimensions but make them uncorrelated
-        X_train = torch.tensor(pca.fit_transform(X_train), dtype=torch.float32)
-        X_test = torch.tensor(pca.transform(X_test), dtype=torch.float32)
+
+        X_train, X_test = pca(X_train.numpy(), X_test.numpy(), whiten=False)
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+        X_test = torch.tensor(X_test, dtype=torch.float32)
+
         num_classes = 2
 
     elif dataset_name == 'bank':
@@ -87,10 +80,10 @@ def load_dataset(dataset_name):
 
         ct = ColumnTransformer(
             transformers=[
-                ("num", StandardScaler(with_mean=True, with_std=True), list(num_cols)),
+                ("num", StandardScaler(with_mean=True, with_std=False), list(num_cols)),
                 ("cat", Pipeline([
                     ("onehot", OneHotEncoder(
-                        handle_unknown="ignore", sparse_output=False, drop='first')),
+                        handle_unknown="ignore", sparse_output=False)),
                     ("scaler", StandardScaler(with_mean=True, with_std=False)),
                 ]),
                     list(cat_cols)),
@@ -102,9 +95,9 @@ def load_dataset(dataset_name):
             X, y, test_size=0.2, random_state=42, stratify=y)
         X_train = ct.fit_transform(X_train)
         X_test = ct.transform(X_test)
-        pca = PCA(whiten=True, random_state=42) # keep all dimensions but make them uncorrelated
-        X_train = torch.tensor(pca.fit_transform(X_train), dtype=torch.float32)
-        X_test = torch.tensor(pca.transform(X_test), dtype=torch.float32)
+        X_train, X_test = pca(X_train, X_test, whiten=True)
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+        X_test = torch.tensor(X_test, dtype=torch.float32)
         y_train = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
         y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
         num_classes = 2
