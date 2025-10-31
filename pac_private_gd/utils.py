@@ -2,9 +2,10 @@ import torch
 from torch.func import functional_call, vmap, grad
 import numpy as np
 from scipy.special import lambertw, gammaln
-import data
+
 from models import LinearModel
-# global_rng.py
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
 
 def get_param_vec(model):
     params = []
@@ -13,17 +14,8 @@ def get_param_vec(model):
     return torch.cat(params)  # shape (num_params,)
 
 def get_per_sample_grads(model, loss_fn, X, y, l2_lambda=0.0):
-    torch.set_grad_enabled(True)
-    torch.set_default_dtype(torch.float32)
-
-    X = X.to(torch.float32)
-    if isinstance(loss_fn, torch.nn.BCEWithLogitsLoss):
-        y = y.to(torch.float32)
-    else:
-        y = y.to(torch.long)
-    model = model.to(torch.float32)
-    params = {k: v.detach().clone().to(torch.float32) for k, v in model.named_parameters()}
-    buffers = {k: v.detach().clone().to(torch.float32) for k, v in model.named_buffers()}
+    params = {k: v.detach() for k, v in model.named_parameters()}
+    buffers = {k: v.detach() for k, v in model.named_buffers()}
 
     def compute_loss(params, buffers, sample, target):
         preds = functional_call(model, (params, buffers), (sample.unsqueeze(0),))
@@ -43,7 +35,7 @@ def get_per_sample_grads(model, loss_fn, X, y, l2_lambda=0.0):
 
     if l2_lambda > 0:
         with torch.no_grad():
-            w_vec = torch.cat([p.reshape(-1) for p in model.parameters()]).to(torch.float32)
+            w_vec = torch.cat([p.reshape(-1) for p in model.parameters()])
             reg_grad = l2_lambda * w_vec
         grads_flat = grads_flat + reg_grad.unsqueeze(0)
 
@@ -95,19 +87,7 @@ def exact_var_1d(c):
 
     # log-sum-exp for numerical stability
     max_log = np.max(log_terms)
-    # E_invK = np.exp(max_log) * np.sum(np.exp(log_terms - max_log))
-
-
-    # Subtract max to stabilize exponentiation
-    shifted = log_terms - max_log
-
-    # Clip to the range where np.exp() is representable in float64
-    # (exp(-745) ~ 5e-324 is near underflow)
-    shifted = np.clip(shifted, -745, 700)
-
-    # Use errstate to silence underflow warnings safely
-    # with np.errstate(under="ignore", over="ignore", invalid="ignore"):
-    E_invK = np.exp(max_log) * np.sum(np.exp(shifted))
+    E_invK = np.exp(max_log) * np.sum(np.exp(log_terms - max_log))
 
     # probability K ≥ 1
     p_nonzero = 1 - 2 ** (-n)
@@ -151,27 +131,24 @@ def optimal_eta(mu, T, C, e0, var):
         
     return eta
 
-def find_e0(X, y, num_classes, mu):
-    X = X.to(torch.float32)
-    y = y.to(torch.float32 if num_classes == 2 else torch.long)
-    model = LinearModel(X.shape[1], num_classes if num_classes > 2 else 1) # logistic/softmax regression
-    if num_classes == 2:
-        loss_fn = torch.nn.BCEWithLogitsLoss()
+def find_e0(X, y, num_classes):
+    clf = LogisticRegression(max_iter=2000, penalty=None, fit_intercept=False)
+    clf.fit(X, y)
+    w_star = clf.coef_.ravel()
+    return w_star
+
+# Whiten the data using PCA, and drop the zero-variance dimensions
+def pca(X_train, X_test, whiten, tol=1e-6):
+    pca = PCA(whiten=False, random_state=42)
+    X_train_pca = pca.fit_transform(X_train)
+    # get the non-zero eigenvalue components
+    non_zero_var_indices = pca.explained_variance_ > tol
+    X_train_pca = X_train_pca[:, non_zero_var_indices]
+    X_test_pca = pca.transform(X_test)
+    X_test_pca = X_test_pca[:, non_zero_var_indices]
+    if whiten:
+        X_train_whitened = X_train_pca / np.sqrt(pca.explained_variance_[non_zero_var_indices])
+        X_test_whitened = X_test_pca / np.sqrt(pca.explained_variance_[non_zero_var_indices])
+        return X_train_whitened, X_test_whitened
     else:
-        loss_fn = torch.nn.CrossEntropyLoss()
-
-    optimizer = torch.optim.LBFGS(model.parameters())
-    
-    def closure():
-        optimizer.zero_grad()
-        outputs = model(X)
-        loss = loss_fn(outputs, y)
-        loss += 0.5 * mu * sum(torch.sum(param ** 2) for param in model.parameters())
-        loss.backward()
-        return loss
-    
-    for t in range(1000):
-        optimizer.step(closure)
-
-    optimal_w = get_param_vec(model).detach().numpy()
-    return optimal_w
+        return X_train_pca, X_test_pca
