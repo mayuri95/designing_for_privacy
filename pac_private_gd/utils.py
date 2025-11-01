@@ -13,7 +13,7 @@ def get_param_vec(model):
         params.append(param.view(-1))
     return torch.cat(params)  # shape (num_params,)
 
-def get_per_sample_grads(model, loss_fn, X, y, l2_lambda=0.0):
+def get_per_sample_grads(model, loss_fn, X, y):
     params = {k: v.detach() for k, v in model.named_parameters()}
     buffers = {k: v.detach() for k, v in model.named_buffers()}
 
@@ -32,12 +32,6 @@ def get_per_sample_grads(model, loss_fn, X, y, l2_lambda=0.0):
         grads_per_sample.append(g_list.reshape(g_list.shape[0], -1))
     
     grads_flat = torch.cat(grads_per_sample, dim=1)
-
-    if l2_lambda > 0:
-        with torch.no_grad():
-            w_vec = torch.cat([p.reshape(-1) for p in model.parameters()])
-            reg_grad = l2_lambda * w_vec
-        grads_flat = grads_flat + reg_grad.unsqueeze(0)
 
     return grads_flat
 

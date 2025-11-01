@@ -20,10 +20,10 @@ random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k
 filename = os.path.join(output_dir, f'{random_string}.csv')
 write_header = not os.path.exists(filename)
 
-budget_list= [64]
-e0_type_list = ['exact'] # exact for now
+budget_list= [None, 64, 1024]
+e0_type_list = [1e-3, 1e-2, 0.1] # exact for now
 T_list = [50]
-num_trials = 10
+num_trials = 5
 
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
@@ -47,9 +47,8 @@ for dataset in dataset_list:
                             verbose=False,
                             seed = 3140931*trial_ind
                         )
-                        print(privacy_aware, inv_mi_budget, test_acc)
                         accs.append(test_acc)
                         
-                    print(privacy_aware, inv_mi_budget, np.average(accs), np.std(accs))
+                    print(privacy_aware, inv_mi_budget, e0_type, np.average(accs), np.std(accs))
     del X, y, X_test, y_test
 

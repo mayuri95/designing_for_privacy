@@ -14,23 +14,34 @@ def make_rng(seed=42):
     torch.manual_seed(seed)
     return rng
 
+@torch.no_grad()
 def estimate_mu(X, w):
     """
-    Estimate strong-convexity constant μ for the logistic loss
-    at current parameter vector w.
+    Return local strong-convexity (mu) and smoothness (L) for logistic loss at w:
+        mu = lambda_min( (1/n) X^T S X ) + reg_lambda
+        L   = lambda_max( (1/n) X^T S X ) + reg_lambda
+    where S = diag(p*(1-p)), p = sigmoid(X w).
 
     Args:
-        X (torch.Tensor): [n, d] input features
-        w (torch.Tensor): [d, 1] parameter vector
+        X: [n, d] float tensor
+        w: [d] or [d,1] float tensor
+        reg_lambda: L2 regularization coefficient (>=0)
+
     Returns:
-        float: estimated strong convexity (μ)
+        mu, L  (floats)
     """
-    with torch.no_grad():
-        p = torch.sigmoid(X @ w)              # [n, 1]
-        s = (p * (1 - p)).view(-1, 1)         # [n, 1] curvature per sample
-        # Average curvature-weighted feature norm
-        mu = torch.mean(torch.sum((X ** 2) * s, dim=1)) / X.shape[1]
-        return mu.item()
+    if w.ndim == 2 and w.shape[1] == 1:
+        w = w.squeeze(1)
+    z = X @ w
+    p = torch.sigmoid(z)
+    s = (p * (1 - p))           # [n]
+    # form H = (1/n) X^T S X  by scaling rows of X by sqrt(s)
+    Xs = X * s.sqrt().unsqueeze(1)  # [n, d]
+    H = (Xs.t() @ Xs) / X.shape[0]  # [d, d], symmetric PSD
+    # Use symmetric eigvals for numerical stability
+    eigvals = torch.linalg.eigvalsh(H)
+    mu = float(eigvals[0].item())
+    return mu
 
 
 def pac_private_gd(X, y, X_test, y_test, num_classes, T, mi_budget, privacy_aware, e0, verbose=True, seed=1):
@@ -61,7 +72,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, T, mi_budget, privacy_awar
 
         mu = estimate_mu(X, model_update)
 
-        per_sample_grads = utils.get_per_sample_grads(model, loss_fn, X, y, mu).cpu().numpy()
+        per_sample_grads = utils.get_per_sample_grads(model, loss_fn, X, y).cpu().numpy()
 
     
         for d_i in range(d):
@@ -87,7 +98,6 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, T, mi_budget, privacy_awar
         with torch.no_grad():
             loss = loss_fn(model(X), y).item()
             cla_loss.append(loss)
-            loss += (mu / 2) * utils.get_param_vec(model).norm().item()**2
             train_loss.append(loss)
 
         if verbose:
