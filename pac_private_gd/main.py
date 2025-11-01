@@ -16,7 +16,6 @@ dataset_list = [
 
 budget_list = [None, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 budget_list = [budget_list[int(sys.argv[1])]]
-e0_type_list = ['exact'] # exact for now
 T_list = [50]
 num_trials = 1
 
@@ -27,10 +26,10 @@ T=50
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
 
-    e0 = find_e0(X, y, num_classes, mu)
     for inv_mi_budget in budget_list:
         d = {}
         for mu in mus:
+            e0 = find_e0(X, y, num_classes, mu)
             d[mu] = {}
             for privacy_aware in [True, False]:
                 accs = []
@@ -45,7 +44,7 @@ for dataset in dataset_list:
                         T=T,
                         mi_budget=1/inv_mi_budget if inv_mi_budget is not None else None,
                         privacy_aware=privacy_aware,
-                        e0=e0 if e0_type == 'exact' else np.ones_like(e0) * e0_type,
+                        e0=e0,
                         verbose=False
                     )
                     accs.append(test_acc)
