@@ -50,6 +50,8 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, T, mi_budget, privacy_awar
     # X, y, X_test, y_test, num_classes = data.load_dataset(dataset_name)
     num_features = X.shape[0]
 
+    mu = estimate_mu(X, torch.zeros(X.shape[1], 1))
+
     model = LinearModel(X.shape[1], num_classes if num_classes > 2 else 1)
     if num_classes == 2:
         loss_fn = torch.nn.BCEWithLogitsLoss()
@@ -69,8 +71,6 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, T, mi_budget, privacy_awar
 
     for i in range(T):
         model_update = np.zeros(d)
-
-        mu = estimate_mu(X, model_update)
 
         per_sample_grads = utils.get_per_sample_grads(model, loss_fn, X, y).cpu().numpy()
 
