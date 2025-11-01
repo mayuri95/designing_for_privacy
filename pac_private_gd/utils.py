@@ -127,7 +127,7 @@ def optimal_eta(mu, T, C, e0, var):
 
 def find_e0(X, y, num_classes):
     clf = LogisticRegression(max_iter=2000, penalty=None, fit_intercept=False)
-    clf.fit(X, y)
+    clf.fit(X, y.numpy().ravel())
     w_star = clf.coef_.ravel()
     return w_star
 

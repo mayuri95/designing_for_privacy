@@ -17,6 +17,21 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 import pandas as pd, numpy as np, torch, os
 
+def pca_wrapper(X_train, X_test, whiten, tol=1e-6):
+    pca = PCA(whiten=False, random_state=42)
+    X_train_pca = pca.fit_transform(X_train)
+    # get the non-zero eigenvalue components
+    non_zero_var_indices = pca.explained_variance_ > tol
+    X_train_pca = X_train_pca[:, non_zero_var_indices]
+    X_test_pca = pca.transform(X_test)
+    X_test_pca = X_test_pca[:, non_zero_var_indices]
+    if whiten:
+        X_train_whitened = X_train_pca / np.sqrt(pca.explained_variance_[non_zero_var_indices])
+        X_test_whitened = X_test_pca / np.sqrt(pca.explained_variance_[non_zero_var_indices])
+        return X_train_whitened, X_test_whitened
+    else:
+        return X_train_pca, X_test_pca
+
 def stable_bank_loader(pwd, seed=42):
     # Load data
     df = pd.read_csv(os.path.join(pwd, "bank", "bank-full.csv"), sep=";")
@@ -136,41 +151,43 @@ def load_dataset(dataset_name):
         num_classes = 2
 
     elif dataset_name == 'bank':
-        return stable_bank_loader(pwd)
-        # # fetch dataset
-        # # bank_marketing = pd.read_csv('bank/bank-full.csv', sep=";")
-        # bank_marketing = pd.read_csv(os.path.join(pwd, 'bank', 'bank-full.csv'), sep=";")
-        # # data (as pandas dataframes)
-        # # DataFrame of features (categorical + numeric)
-        # X = bank_marketing.drop(columns=["y"])
-        # y = bank_marketing["y"]                  # Series target: "yes"/"no"
-        # y = (y.astype(str).str.lower() == "yes").astype(int).to_numpy()
+         # fetch dataset
+        # bank_marketing = pd.read_csv('bank/bank-full.csv', sep=";")
+        bank_marketing = pd.read_csv(os.path.join(pwd, 'bank', 'bank-full.csv'), sep=";")
+        # data (as pandas dataframes)
+        # DataFrame of features (categorical + numeric)
+        X = bank_marketing.drop(columns=["y"])
+        y = bank_marketing["y"]                  # Series target: "yes"/"no"
+        y = (y.astype(str).str.lower() == "yes").astype(int).to_numpy()
 
-        # cat_cols = X.select_dtypes(include=["object", "category"]).columns
-        # num_cols = X.columns.difference(cat_cols)
+        cat_cols = X.select_dtypes(include=["object", "category"]).columns
+        num_cols = X.columns.difference(cat_cols)
 
-        # ct = ColumnTransformer(
-        #     transformers=[
-        #         ("num", StandardScaler(with_mean=True, with_std=True), list(num_cols)),
-        #         ("cat", Pipeline([
-        #             ("onehot", OneHotEncoder(
-        #                 handle_unknown="ignore", sparse_output=False)),
-        #             ("scaler", StandardScaler(with_mean=True, with_std=False)),
-        #         ]),
-        #             list(cat_cols)),
-        #     ],
-        #     remainder="drop",
-        # )
+        ct = ColumnTransformer(
+            transformers=[
+                ("num", StandardScaler(with_mean=True, with_std=True), list(num_cols)),
+                ("cat", Pipeline([
+                    ("onehot", OneHotEncoder(
+                        handle_unknown="ignore", sparse_output=False, drop='first')),
+                    ("scaler", StandardScaler(with_mean=True, with_std=False)),
+                ]),
+                    list(cat_cols)),
+            ],
+            remainder="drop",
+        )
 
-        # X_train, X_test, y_train, y_test = train_test_split(
-        #     X, y, test_size=0.2, random_state=42, stratify=y)
-        # X_train = ct.fit_transform(X_train)
-        # X_test = ct.transform(X_test)
-        # pca = PCA(whiten=True, random_state=42) # keep all dimensions but make them uncorrelated
-        # X_train = torch.tensor(pca.fit_transform(X_train), dtype=torch.float32)
-        # X_test = torch.tensor(pca.transform(X_test), dtype=torch.float32)
-        # y_train = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
-        # y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
-        # num_classes = 2
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y)
+        X_train = ct.fit_transform(X_train)
+        X_test = ct.transform(X_test)
+        # X_train, X_test = pca_wrapper(X_train, X_test, whiten=True)
+        pca = PCA(whiten=True, random_state=42, svd_solver="full")
+        X_train = pca.fit_transform(X_train)
+        X_test = pca.transform(X_test)
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+        X_test = torch.tensor(X_test, dtype=torch.float32)
+        y_train = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
+        y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
+        num_classes = 2
 
     return X_train, y_train, X_test, y_test, num_classes

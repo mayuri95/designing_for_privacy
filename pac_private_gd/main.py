@@ -21,7 +21,7 @@ filename = os.path.join(output_dir, f'{random_string}.csv')
 write_header = not os.path.exists(filename)
 
 budget_list= [None, 64, 1024]
-e0_type_list = [1e-3, 1e-2, 0.1] # exact for now
+e0_type_list = ['exact'] # exact for now
 T_list = [50]
 num_trials = 5
 
