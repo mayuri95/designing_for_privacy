@@ -9,11 +9,10 @@ from typing import Tuple, Optional, Sequence
 import pickle
 from utils import *
 import sys
-from sklearn.decomposition import PCA
-
+from sklearn.decomposition import PCA, FastICA
 TEST_SIZE   = 0.2
 RANDOM_SEED = 42
-NUM_SUBSETS = 128
+NUM_SUBSETS = 1024
 NUM_TRIALS = 100
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
@@ -40,9 +39,9 @@ for lam_val in lams:
         X_train = scaler.transform(X_train)
         X_test  = scaler.transform(X_test)
 
-        pca = PCA(whiten=True, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
-        X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
-        X_test  = pca.transform(X_test)
+        ica = FastICA(whiten=False, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
+        X_train = ica.fit_transform(X_train)          # (n, r) where r = rank
+        X_test  = ica.transform(X_test)
         n, d = X_train.shape
         y_mean = y_train.mean()
         y_train_c = y_train - y_mean
@@ -107,7 +106,7 @@ for lam_val in lams:
                     release.append(w)
                 y_pred_closed = ridge_pred(X_test, release) + y_mean
                 priv_obl_mses.append(mean_squared_error(y_pred_closed, y_test))
-            # print(f'C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
+            print(f'C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
 
 
             variances = {}

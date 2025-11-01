@@ -3,12 +3,96 @@ import pandas as pd
 import torch
 from torchvision import datasets
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
 from sklearn.compose import ColumnTransformer
 import re
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
+import numpy as np
 from utils import pca
+
+def load_credit():
+    df = pd.read_excel('credit_data.xls', header=1)
+    target_col = "default payment next month"
+    assert target_col in df.columns, f"Target column not found: {target_col}"
+
+    y = df[target_col].to_numpy()
+    X = df.drop(columns=["ID"]).copy()
+
+    # ----------------------------
+    # Fix codes for categorical
+    # ----------------------------
+    # Merge unknowns to a valid bucket
+    X["EDUCATION"] = X["EDUCATION"].replace({0: 4, 5: 4, 6: 4})
+    X["MARRIAGE"]  = X["MARRIAGE"].replace({0: 3})
+
+    cat_cols   = ["SEX", "EDUCATION", "MARRIAGE"]
+    money_cols = [c for c in X.columns if c.startswith(("BILL_AMT", "PAY_AMT"))]
+    num_cols   = [c for c in X.columns if c not in cat_cols]
+
+    # ----------------------------
+    # Split BEFORE fitting transforms
+    # ----------------------------
+    X_train_df, X_test_df, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    # ----------------------------
+    # Column-wise transforms
+    # ----------------------------
+    signed_log = FunctionTransformer(
+        lambda A: np.sign(A) * np.log1p(np.abs(A)),
+        feature_names_out="one-to-one"
+    )
+    money_pipe = Pipeline([
+        ("slog", signed_log)
+    ])
+
+
+    # OneHotEncoder dense so we can PCA later
+    ohe = OneHotEncoder(
+        drop="first",
+        handle_unknown="ignore",
+        sparse_output=False
+    )
+
+    # Apply per-group transforms; we’ll standardize + PCA on the concatenated matrix next
+    coltf = ColumnTransformer(
+        transformers=[
+            ("money", money_pipe, money_cols),
+            ("num_other", "passthrough", list(set(num_cols) - set(money_cols))),
+            ("cat", ohe, cat_cols),
+        ],
+        remainder="drop",
+        verbose_feature_names_out=False
+    )
+
+    # ----------------------------
+    # Global standardize + PCA whitening
+    # ----------------------------
+    global_pipe = Pipeline([
+        ("cols", coltf),
+        ("scaler", StandardScaler(with_mean=True, with_std=True)),
+        ("pca", PCA(whiten=True, random_state=42)),
+    ])
+
+    # Fit on train, transform both
+    X_train = global_pipe.fit_transform(X_train_df)
+    X_test  = global_pipe.transform(X_test_df)
+
+    # Ensure dense np.float64
+    X_train = np.asarray(X_train, dtype=np.float64)
+    X_test  = np.asarray(X_test, dtype=np.float64)
+    num_classes=2
+
+    X_train = torch.tensor(X_train, dtype=torch.float32)
+    X_test = torch.tensor(X_test, dtype=torch.float32)
+    y_train = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
+    y_test  = torch.tensor(y_test,  dtype=torch.float32).view(-1, 1)
+
+    return X_train, y_train, X_test, y_test, num_classes
+
 
 def load_dataset(dataset_name):
     pwd = os.path.dirname(__file__)  # current directory of this file data.py
@@ -65,41 +149,7 @@ def load_dataset(dataset_name):
 
         num_classes = 2
 
-    elif dataset_name == 'bank':
-        # fetch dataset
-        # bank_marketing = pd.read_csv('bank/bank-full.csv', sep=";")
-        bank_marketing = pd.read_csv(os.path.join(pwd, 'bank', 'bank-full.csv'), sep=";")
-        # data (as pandas dataframes)
-        # DataFrame of features (categorical + numeric)
-        X = bank_marketing.drop(columns=["y"])
-        y = bank_marketing["y"]                  # Series target: "yes"/"no"
-        y = (y.astype(str).str.lower() == "yes").astype(int).to_numpy()
-
-        cat_cols = X.select_dtypes(include=["object", "category"]).columns
-        num_cols = X.columns.difference(cat_cols)
-
-        ct = ColumnTransformer(
-            transformers=[
-                ("num", StandardScaler(with_mean=True, with_std=False), list(num_cols)),
-                ("cat", Pipeline([
-                    ("onehot", OneHotEncoder(
-                        handle_unknown="ignore", sparse_output=False)),
-                    ("scaler", StandardScaler(with_mean=True, with_std=False)),
-                ]),
-                    list(cat_cols)),
-            ],
-            remainder="drop",
-        )
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y)
-        X_train = ct.fit_transform(X_train)
-        X_test = ct.transform(X_test)
-        X_train, X_test = pca(X_train, X_test, whiten=True)
-        X_train = torch.tensor(X_train, dtype=torch.float32)
-        X_test = torch.tensor(X_test, dtype=torch.float32)
-        y_train = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
-        y_test = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
-        num_classes = 2
+    elif dataset_name == 'credit':
+        return load_credit()
 
     return X_train, y_train, X_test, y_test, num_classes

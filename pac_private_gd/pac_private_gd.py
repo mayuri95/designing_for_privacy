@@ -4,6 +4,8 @@ import torch
 import data
 from models import LinearModel
 import utils
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, roc_auc_score
+
 
 def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_aware, e0, verbose=True):
 
@@ -66,10 +68,10 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
 
     # now that we have trained the model, calculate the test accuracy
     y_pred = model(X_test)
-    if num_classes == 2:
-        y_pred_labels = (torch.sigmoid(y_pred) >= 0.5).float().view(-1, 1)
-    else:
-        y_pred_labels = torch.argmax(y_pred, dim=1).view(-1, 1)
-    test_acc = (y_pred_labels == y_test).float().mean().item()
+    y_pred_probs = torch.sigmoid(y_pred.view(-1)).detach().numpy()
+    auc = roc_auc_score(y_test, y_pred_probs)
+    y_pred_labels = (torch.sigmoid(y_pred) >= 0.5).float().view(-1, 1)
+    bal_acc = balanced_accuracy_score(y_test, y_pred_labels.numpy())
+    test_acc = accuracy_score(y_test, y_pred_labels.numpy())
 
-    return train_loss, cla_loss, test_acc
+    return train_loss, cla_loss, (test_acc, bal_acc, auc)

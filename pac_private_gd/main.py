@@ -7,64 +7,49 @@ import random
 import string
 import os
 import data
-
-pwd = os.path.dirname(os.path.abspath(__file__))
-output_dir = os.path.join(pwd, 'final_results')
-os.makedirs(output_dir, exist_ok=True)
+import pickle
+import sys
 
 dataset_list = [
-    'bank',
-    'mnist_0_vs_7', # easy binary
-    'mnist_7_vs_9', # hard binary
+    'credit'
 ]
 
-random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-filename = os.path.join(output_dir, f'{random_string}.csv')
-write_header = not os.path.exists(filename)
-
-budget_list= [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+budget_list = [None, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+budget_list = [budget_list[int(sys.argv[1])]]
 e0_type_list = ['exact'] # exact for now
-mu_list = [0.0001, 0.001, 0.01]
 T_list = [50]
-num_trials = 10
+num_trials = 1
+
+mus = [1e-3, 1e-2, 1e-1, 1, 10]
+mus = [1]
+T=50
 
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
-    for mu in mu_list:
-        e0 = find_e0(X, y, num_classes, mu)
-        for T in [50]:
-            for e0_type in e0_type_list:
-                for inv_mi_budget in budget_list:
-                    for privacy_aware in [True, False]:
-                        for _ in range(num_trials):
-                            train_loss, cla_loss, test_acc = pac_private_gd(
-                                X=X,
-                                y=y,
-                                X_test=X_test,
-                                y_test=y_test,
-                                num_classes=num_classes,
-                                mu=mu,
-                                T=T,
-                                mi_budget=1/inv_mi_budget if inv_mi_budget is not None else None,
-                                privacy_aware=privacy_aware,
-                                e0=e0 if e0_type == 'exact' else np.ones_like(e0) * e0_type,
-                                verbose=False
-                            )
-                            results = {
-                                'dataset_name': dataset,
-                                'mu': mu,
-                                'T': T,
-                                'use_e0': e0_type,
-                                'inverse_mi_budget': inv_mi_budget,
-                                'privacy_aware': privacy_aware,
-                                'train_loss_list': train_loss,
-                                'cla_loss_list': cla_loss,
-                                'final_train_loss': train_loss[-1],
-                                'test_acc': test_acc
-                            }
-                            df = pd.DataFrame([results])
-                            df.to_csv(filename, mode='a', index=False, header=write_header)
-                            write_header = False
-                            del df
-                            del results
-    del X, y, X_test, y_test
+
+    e0 = find_e0(X, y, num_classes, mu)
+    for inv_mi_budget in budget_list:
+        d = {}
+        for mu in mus:
+            d[mu] = {}
+            for privacy_aware in [True, False]:
+                accs = []
+                for _ in range(num_trials):
+                    train_loss, cla_loss, test_acc = pac_private_gd(
+                        X=X,
+                        y=y,
+                        X_test=X_test,
+                        y_test=y_test,
+                        num_classes=num_classes,
+                        mu=mu,
+                        T=T,
+                        mi_budget=1/inv_mi_budget if inv_mi_budget is not None else None,
+                        privacy_aware=privacy_aware,
+                        e0=e0 if e0_type == 'exact' else np.ones_like(e0) * e0_type,
+                        verbose=False
+                    )
+                    accs.append(test_acc)
+                d[mu][privacy_aware] = accs
+                print(privacy_aware, inv_mi_budget, np.average(accs), np.std(accs))
+        fname = 'results/credit_data_budget={}.pkl'.format(inv_mi_budget)
+        pickle.dump(d, open(fname, 'wb'))
