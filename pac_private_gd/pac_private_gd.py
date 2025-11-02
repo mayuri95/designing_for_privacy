@@ -26,7 +26,7 @@ def est_L(X, mu):
     return L
 
 def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_aware, e0,
-                   verbose=True, oblivious_C = 0.):
+                   verbose=True, priv_oblivious_mi_budget = 0.):
 
     # X, y, X_test, y_test, num_classes = data.load_dataset(dataset_name)
     num_features = X.shape[0]
@@ -64,6 +64,10 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
             if privacy_aware:
                 eta_i = utils.optimal_eta(mu=mu, T=T, C=C, e0=e0[d_i], var=grad_i_var)
             else:
+                if priv_oblivious_mi_budget != 0:
+                    oblivious_C = d * T / (2.0 * priv_oblivious_mi_budget)
+                else:
+                    oblivious_C = 0
                 eta_i = utils.optimal_eta(mu=mu, T=T, C=oblivious_C, e0=e0[d_i], var=grad_i_var)
             assert eta_i >= 0
             eta_i = np.clip(eta_i, -L, L)
