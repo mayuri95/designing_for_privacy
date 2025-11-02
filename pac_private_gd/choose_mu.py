@@ -16,7 +16,7 @@ num_trials = 1
 
 mus = [1e-3, 1e-2, 1e-1, 1, 10]
 T=50
-for dataset in ['credit', 'mnist_7_vs_9']:
+for dataset in ['credit', 'mnist_7_vs_9', 'mnist_0_vs_7']:
     for mu in mus:
         X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
         e0 = utils.find_e0(X, y, num_classes, mu)
