@@ -12,20 +12,20 @@ import sys
 
 # run as budget ind, e0 ind, dataset ind
 budget_list = [4, 16, 64, 256, 1024]
-budget_list = [budget_list[int(sys.argv[1])]]
 T_list = [50]
-num_trials = 1
+num_trials = 100
 mu = 1.
 T=50
-e0_type_list = [0.01, 0.1, 1.0]
-e0_type_list = [e0_type_list[int(sys.argv[2])]]
+e0_type_list = ['exact']
 dataset_list = [
     'mnist_7_vs_9',
     'mnist_0_vs_7'
 ]
-dataset_list = [dataset_list[int(sys.argv[3])]]
 print(budget_list, e0_type_list, dataset_list)
 for dataset in dataset_list:
+    if dataset == 'mnist_0_vs_7':
+        mu = 0.1 # lower mu for 0 vs. 7
+    print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     e0 = find_e0(X, y, num_classes, mu)
     print(np.linalg.norm(e0))
@@ -48,9 +48,10 @@ for dataset in dataset_list:
                         e0=e0 if e0_type == 'exact' else np.ones_like(e0) * e0_type,
                         verbose=False
                     )
-                    print(trial_ind)
+                    print(trial_ind, test_acc)
                     accs.append(test_acc)
                 d[privacy_aware] = accs
-                print(privacy_aware, inv_mi_budget, np.average(accs), np.std(accs))
+                test_accs = [k[0] for k in accs]
+                print(privacy_aware, e0_type, inv_mi_budget, np.average(test_accs), np.std(test_accs))
             fname = f'results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
             pickle.dump(d, open(fname, 'wb'))

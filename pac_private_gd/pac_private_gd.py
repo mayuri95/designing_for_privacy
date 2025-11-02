@@ -80,6 +80,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
             train_loss.append(loss)
 
         if verbose:
+            print(L, mu, np.linalg.norm(model_update))
             print(f"Iter {i+1}/{T}, Train Loss: {loss:.4f}")
 
         del per_sample_grads
