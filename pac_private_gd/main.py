@@ -17,7 +17,7 @@ T_list = [50]
 num_trials = 1
 mu = 1.
 T=50
-e0_type_list = [0.001, 0.01, 0.1]
+e0_type_list = [0.01, 0.1, 1.0]
 e0_type_list = [e0_type_list[int(sys.argv[2])]]
 dataset_list = [
     'mnist_7_vs_9',
