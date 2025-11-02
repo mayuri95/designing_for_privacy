@@ -10,25 +10,27 @@ import data
 import pickle
 import sys
 
-dataset_list = [
-    'credit'
-]
-
-budget_list = [None, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+# run as budget ind, e0 ind, dataset ind
+budget_list = [4, 16, 64, 256, 1024]
 budget_list = [budget_list[int(sys.argv[1])]]
 T_list = [50]
 num_trials = 1
 mu = 1.
 T=50
-e0_type_list = ['exact', 0.001, 0.01, 0.1]
+e0_type_list = [0.001, 0.01, 0.1]
+e0_type_list = [e0_type_list[int(sys.argv[2])]]
+dataset_list = [
+    'mnist_7_vs_9',
+    'mnist_0_vs_7'
+]
+dataset_list = [dataset_list[int(sys.argv[3])]]
 
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     e0 = find_e0(X, y, num_classes, mu)
     for inv_mi_budget in budget_list:
-        d = {}
         for e0_type in e0_type_list:
-            d[e0_type] = {}
+            d = {}
             for privacy_aware in [True, False]:
                 accs = []
                 for trial_ind in range(num_trials):
@@ -47,7 +49,7 @@ for dataset in dataset_list:
                     )
                     print(trial_ind)
                     accs.append(test_acc)
-                d[e0_type][privacy_aware] = accs
+                d[privacy_aware] = accs
                 print(privacy_aware, inv_mi_budget, np.average(accs), np.std(accs))
-        fname = 'results/credit_data_budget={}.pkl'.format(inv_mi_budget)
-        pickle.dump(d, open(fname, 'wb'))
+            fname = 'results/credit_data_budget={}_e0={e0_type}.pkl'.format(inv_mi_budget)
+            pickle.dump(d, open(fname, 'wb'))
