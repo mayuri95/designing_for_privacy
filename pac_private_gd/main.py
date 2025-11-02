@@ -24,10 +24,11 @@ dataset_list = [
     'mnist_0_vs_7'
 ]
 dataset_list = [dataset_list[int(sys.argv[3])]]
-
+print(budget_list, e0_type_list, dataset_list)
 for dataset in dataset_list:
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     e0 = find_e0(X, y, num_classes, mu)
+    print(np.linalg.norm(e0))
     for inv_mi_budget in budget_list:
         for e0_type in e0_type_list:
             d = {}
@@ -51,5 +52,5 @@ for dataset in dataset_list:
                     accs.append(test_acc)
                 d[privacy_aware] = accs
                 print(privacy_aware, inv_mi_budget, np.average(accs), np.std(accs))
-            fname = 'results/credit_data_budget={}_e0={e0_type}.pkl'.format(inv_mi_budget)
+            fname = f'results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
             pickle.dump(d, open(fname, 'wb'))
