@@ -16,13 +16,13 @@ T_list = [50]
 num_trials = 250
 mu = 1.
 T=50
-e0_type_list = ['exact', 0.01, 0.1, 1.0]
+e0_type_list = [0.01, 0.1, 1.0]
 dataset_list = [
     'mnist_0_vs_7',
     'mnist_7_vs_9',
     'credit'
 ]
-e0_type_list = [e0_type_list[int(sys.argv[1])]] # args: 0,1,2,3
+e0_type_list = [e0_type_list[int(sys.argv[1])]] # args: 0,1,2
 dataset_list = [dataset_list[int(sys.argv[2])]] # args: 0,1,2
 print(e0_type_list)
 for dataset in dataset_list:
@@ -54,5 +54,5 @@ for dataset in dataset_list:
                 d[privacy_aware] = accs
                 test_accs = [k[0] for k in accs]
                 print(privacy_aware, e0_type, inv_mi_budget, np.average(test_accs), np.std(test_accs))
-            fname = f'results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
+            fname = f'e0_results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
             pickle.dump(d, open(fname, 'wb'))
