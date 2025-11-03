@@ -13,7 +13,7 @@ import sys
 # run as budget ind, e0 ind, dataset ind
 budget_list = [4, 16, 64, 256, 1024]
 T_list = [50]
-num_trials = 1
+num_trials = 100
 mu = 1.
 T=50
 dataset_list = [
@@ -49,7 +49,7 @@ for dataset in dataset_list:
                         mu=mu,
                         T=T,
                         mi_budget=1/inv_mi_budget if inv_mi_budget is not None else None,
-                        priv_oblivious_mi_budget=priv_oblivious_mi_budget,
+                        priv_oblivious_mi_budget=1./priv_oblivious_mi_budget,
                         privacy_aware=privacy_aware,
                         e0=e0,
                         verbose=False
