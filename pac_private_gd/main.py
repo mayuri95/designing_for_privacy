@@ -10,20 +10,21 @@ import data
 import pickle
 import sys
 
-budget_list = [4, 16, 64, 256, 1024]
+# run as budget ind, e0 ind, dataset ind
+budget_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 T_list = [50]
 num_trials = 100
 mu = 1.
 T=50
-e0_type_list = [0.01, 0.1, 1.0]
+e0_type_list = ['exact', 0.01, 0.1, 1.0]
 dataset_list = [
+    'mnist_0_vs_7',
     'mnist_7_vs_9',
-    'mnist_0_vs_7'
+    'credit'
 ]
-budget_list = [budget_list[int(sys.argv[1])]]
-e0_type_list = [e0_type_list[int(sys.argv[2])]]
-dataset_list = [dataset_list[int(sys.argv[3])]]
-
+e0_type_list = [e0_type_list[int(sys.argv[1])]]
+dataset_list = [dataset_list[int(sys.argv[2])]]
+print(e0_type_list)
 for dataset in dataset_list:
     print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)

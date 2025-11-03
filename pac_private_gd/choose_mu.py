@@ -22,6 +22,7 @@ for dataset in ['credit', 'mnist_7_vs_9', 'mnist_0_vs_7']:
         e0 = utils.find_e0(X, y, num_classes, mu)
         n, d = X.shape
         L = est_L_diag(X, mu)
+        print(f'L={np.linalg.norm(L)}')
         num_clips = 0
         model = LinearModel(d, 1)
         loss_fn = torch.nn.BCEWithLogitsLoss()
