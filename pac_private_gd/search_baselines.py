@@ -28,8 +28,6 @@ priv_oblivious_mi_budgets = [priv_oblivious_mi_budgets[int(sys.argv[2])]]
 
 print(budget_list, priv_oblivious_mi_budgets, dataset_list)
 for dataset in dataset_list:
-    if dataset == 'mnist_0_vs_7':
-        mu = 0.1 # lower mu for 0 vs. 7
     print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     e0 = find_e0(X, y, num_classes, mu)
