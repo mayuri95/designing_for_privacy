@@ -13,7 +13,7 @@ import sys
 # run as budget ind, e0 ind, dataset ind
 budget_list = [4, 16, 64, 256, 1024] 
 T_list = [50]
-num_trials = 1000
+num_trials = 250
 mu = 1.
 T=50
 e0_type_list = ['exact', 0.01, 0.1, 1.0]
