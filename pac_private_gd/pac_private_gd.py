@@ -6,24 +6,13 @@ from models import LinearModel
 import utils
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, roc_auc_score
 
-def est_L(X, mu):
-    """
-    Estimate strong convexity μ and smoothness L for logistic loss + ridge.
-    Uses sigmoid curvature s_i = σ(z_i)(1-σ(z_i)).
-    Args:
-        X: [n, d] input
-        w: [d, 1] weights; if None, use w=0 (worst-case bound)
-        lam: ridge regularization
-    Returns:
-        (mu, L) estimates
-    """
+def est_L_diag(X, mu):
     X = X.numpy()
     n = X.shape[0]
-    s = np.full((n,), 0.25)       # worst-case curvature at w=0
-    H = (X.T * s) @ X / n
-    eigs = np.linalg.eigvalsh(H)
-    L  = np.max(eigs) + mu
-    return L
+    s = np.full((n,), 0.25)   # worst-case curvature
+    H_diag = (s[:, None] * (X ** 2)).mean(axis=0)
+    L_diag = H_diag + mu
+    return L_diag
 
 def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_aware, e0,
                    verbose=True, priv_oblivious_mi_budget = 0.):
@@ -32,7 +21,9 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
     num_features = X.shape[0]
 
     model = LinearModel(X.shape[1], num_classes if num_classes > 2 else 1)
-    L = est_L(X, mu)
+
+    L = est_L_diag(X, mu)
+
     if num_classes == 2:
         loss_fn = torch.nn.BCEWithLogitsLoss()
     else:
@@ -70,7 +61,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
                     oblivious_C = 0
                 eta_i = utils.optimal_eta(mu=mu, T=T, C=oblivious_C, e0=e0[d_i], var=grad_i_var)
             assert eta_i >= 0
-            eta_i = np.clip(eta_i, -L, L)
+            eta_i = np.clip(eta_i, -L[d_i], L[d_i])
             grad_i = grad_i_fn()
 
             grad_i +=  np.sqrt(C * grad_i_var) * np.random.randn()
