@@ -11,9 +11,9 @@ import pickle
 import sys
 
 # run as budget ind, e0 ind, dataset ind
-budget_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+budget_list = [4, 16, 64, 256, 1024] 
 T_list = [50]
-num_trials = 100
+num_trials = 1000
 mu = 1.
 T=50
 e0_type_list = ['exact', 0.01, 0.1, 1.0]
@@ -22,8 +22,8 @@ dataset_list = [
     'mnist_7_vs_9',
     'credit'
 ]
-e0_type_list = [e0_type_list[int(sys.argv[1])]]
-dataset_list = [dataset_list[int(sys.argv[2])]]
+e0_type_list = [e0_type_list[int(sys.argv[1])]] # args: 0,1,2,3
+dataset_list = [dataset_list[int(sys.argv[2])]] # args: 0,1,2
 print(e0_type_list)
 for dataset in dataset_list:
     print(dataset)
