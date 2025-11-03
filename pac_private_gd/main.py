@@ -10,21 +10,21 @@ import data
 import pickle
 import sys
 
-# run as budget ind, e0 ind, dataset ind
 budget_list = [4, 16, 64, 256, 1024]
 T_list = [50]
 num_trials = 100
 mu = 1.
 T=50
-e0_type_list = ['exact']
+e0_type_list = [0.01, 0.1, 1.0]
 dataset_list = [
     'mnist_7_vs_9',
     'mnist_0_vs_7'
 ]
-print(budget_list, e0_type_list, dataset_list)
+budget_list = [budget_list[int(sys.argv[1])]]
+e0_type_list = [e0_type_list[int(sys.argv[2])]]
+dataset_list = [dataset_list[int(sys.argv[3])]]
+
 for dataset in dataset_list:
-    if dataset == 'mnist_0_vs_7':
-        mu = 0.1 # lower mu for 0 vs. 7
     print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     e0 = find_e0(X, y, num_classes, mu)
