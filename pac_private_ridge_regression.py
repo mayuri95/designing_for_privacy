@@ -9,6 +9,7 @@ from typing import Tuple, Optional, Sequence
 import pickle
 from utils import *
 import sys
+import copy
 from sklearn.decomposition import PCA, FastICA
 TEST_SIZE   = 0.2
 RANDOM_SEED = 42
@@ -56,13 +57,12 @@ for lam_val in lams:
         y_pred_base = ridge_pred(X_test, w_ref) + y_mean
         base_mse = mean_squared_error(y_pred_base, y_test)
         print('non-private baseline mse: ', base_mse)
+        base_C = 0.
         if type(lam_val) == tuple:
             assert lam_val[0] == 'exact'
             mi_to_opt = lam_val[1]
             if mi_to_opt != 0:
                 base_C = 1/(2*mi_to_opt)
-            else:
-                base_C = 0
             opt_lams = [(base_C+1)*sigma2_hat/w_ref[ind]**2 for ind in range(len(w_ref))]
         else:
             opt_lams = [lam_val for ind in range(len(w_ref))]
@@ -102,6 +102,7 @@ for lam_val in lams:
 
             variances = {}
             mi_to_opt = None
+            correction_factor = (C+1)
             if type(lam_val) == tuple:
                 assert lam_val[0] == 'exact'
                 if C-base_C < 1e-12:
@@ -137,5 +138,5 @@ for lam_val in lams:
             print(f'C={C}, priv aware mse: ', np.mean(priv_aware_mses))
             all_mses[C] = (priv_obl_mses, priv_aware_mses)
 
-        pickle.dump(all_mses, open(f'data/{data}_{lam_val}_mses.pkl', 'wb'))
+        pickle.dump(all_mses, open(f'results/{data}_{lam_val}_mses.pkl', 'wb'))
         pickle.dump(all_lams, open(f'data/{data}_{lam_val}_lams.pkl', 'wb'))
