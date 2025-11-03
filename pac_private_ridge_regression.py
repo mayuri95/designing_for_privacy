@@ -13,15 +13,15 @@ from sklearn.decomposition import PCA, FastICA
 TEST_SIZE   = 0.2
 RANDOM_SEED = 42
 NUM_SUBSETS = 1024
-NUM_TRIALS = 100
+NUM_TRIALS = 1000
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
 datasets = ['wine_white', 'wine_red', 'housing']
 
-lams = [('exact', 0.), ('exact', 1/16), ('exact', 1/1024)]
+lams = [0.1, ('exact', 0.), ('exact', 1/16), ('exact', 1/1024)]
 datasets = [datasets[int(sys.argv[1])]]
 lams = [lams[int(sys.argv[2])]]
-
+print(datasets, lams)
 for lam_val in lams:    
     for data in datasets:
         all_mses, all_lams = {}, {}
@@ -104,17 +104,11 @@ for lam_val in lams:
             mi_to_opt = None
             if type(lam_val) == tuple:
                 assert lam_val[0] == 'exact'
-                mi_to_opt = lam_val[1]
-                if mi_to_opt != 0:
-                    correction_factor = 1./(2*mi_to_opt)
-                else:
-                    correction_factor = 0.
+                if C-base_C < 1e-12:
+                    priv_aware_lam = copy.deepcopy(opt_lams)
             else:
-                correction_factor = 0
-            correction_factor += 1
-            if mi_to_opt == 1/(2*C):
-                assert correction_factor == C+1.
-            priv_aware_lam = [(C+1)*opt_lams[dim_ind] / correction_factor for dim_ind in range(len(opt_lams))]
+                correction_factor = (C+1) / (base_C+1)
+            priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
             all_lams[C] = priv_aware_lam
             for dim_ind in range(d):
                 ws = []
