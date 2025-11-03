@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from pac_private_gd import est_L
+from pac_private_gd import est_L_diag
 import utils
 import pandas as pd
 import random
@@ -21,8 +21,7 @@ for dataset in ['credit', 'mnist_7_vs_9', 'mnist_0_vs_7']:
         X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
         e0 = utils.find_e0(X, y, num_classes, mu)
         n, d = X.shape
-        L = est_L(X, mu)
-        print(f'L={L}')
+        L = est_L_diag(X, mu)
         num_clips = 0
         model = LinearModel(d, 1)
         loss_fn = torch.nn.BCEWithLogitsLoss()
@@ -35,7 +34,7 @@ for dataset in ['credit', 'mnist_7_vs_9', 'mnist_0_vs_7']:
             grad_i_var = utils.exact_var_1d(per_sample_grads[:, d_i])
             eta_i = utils.optimal_eta(mu=mu, T=T, C=0, e0=e0[d_i], var=grad_i_var)
             assert eta_i >= 0
-            eta_clip = np.clip(eta_i, 0, L)
+            eta_clip = np.clip(eta_i, 0, L[d_i])
             if eta_clip != eta_i:
                 num_clips += 1
         print(f'dataset: {dataset} mu: {mu}, % clipped dims:{100*(num_clips/d)}')
