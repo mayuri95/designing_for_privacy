@@ -18,8 +18,9 @@ NUM_TRIALS = 100
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
 datasets = ['wine_white', 'wine_red', 'housing']
 
-lams = [('exact', 0.), ('exact', 1/16), ('exact', 1/1024), 1.0, 0.1]
+lams = [('exact', 0.), ('exact', 1/16), ('exact', 1/1024)]
 datasets = [datasets[int(sys.argv[1])]]
+lams = [lams[int(sys.argv[2])]]
 
 for lam_val in lams:    
     for data in datasets:
@@ -39,14 +40,12 @@ for lam_val in lams:
         X_train = scaler.transform(X_train)
         X_test  = scaler.transform(X_test)
 
-        ica = FastICA(whiten=False, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
-        X_train = ica.fit_transform(X_train)          # (n, r) where r = rank
-        X_test  = ica.transform(X_test)
+        pca = PCA(whiten=True, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
+        X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
+        X_test  = pca.transform(X_test)
         n, d = X_train.shape
         y_mean = y_train.mean()
         y_train_c = y_train - y_mean
-
-        rng = np.random.default_rng(RANDOM_SEED)
 
         XtX = X_train.T @ X_train
         Xty = X_train.T @ y_train_c
@@ -57,14 +56,6 @@ for lam_val in lams:
         y_pred_base = ridge_pred(X_test, w_ref) + y_mean
         base_mse = mean_squared_error(y_pred_base, y_test)
         print('non-private baseline mse: ', base_mse)
-
-        opt_ws = []
-        for dim_ind in range(d):
-            ridge_model_no_intercept = Ridge(alpha=0, fit_intercept=False)
-            ridge_model_no_intercept.fit(np.transpose(
-                np.atleast_2d(X_train[:, dim_ind])), y_train_c)
-            opt_ws.append(ridge_model_no_intercept.coef_[0])
-
         if type(lam_val) == tuple:
             assert lam_val[0] == 'exact'
             mi_to_opt = lam_val[1]
@@ -72,9 +63,9 @@ for lam_val in lams:
                 base_C = 1/(2*mi_to_opt)
             else:
                 base_C = 0
-            opt_lams = [(base_C+1)*sigma2_hat/opt_ws[ind]**2 for ind in range(len(opt_ws))]
+            opt_lams = [(base_C+1)*sigma2_hat/w_ref[ind]**2 for ind in range(len(w_ref))]
         else:
-            opt_lams = [lam_val for ind in range(len(opt_ws))]
+            opt_lams = [lam_val for ind in range(len(w_ref))]
         base_variances = {}
         subsets = {}
         all_lams[0] = opt_lams
