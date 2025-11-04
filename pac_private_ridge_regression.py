@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA, FastICA
 TEST_SIZE   = 0.2
 RANDOM_SEED = 42
 NUM_SUBSETS = 1024
-NUM_TRIALS = 250
+NUM_TRIALS = 1000
 
 inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
@@ -83,7 +83,6 @@ for lam_val in lams:
                 X_subset, Y_subset = X_train[pts], y_train_c[pts]
                 ws.append(ridge_1d(X_subset[:, dim_ind], Y_subset, opt_lam0))
             base_variances[dim_ind] = np.var(ws, ddof=1)
-        pickle.dump(base_variances, open(f'data/baseline_{data}_{lam_val}_variances.pkl', 'wb'))
 
         for inv_mi in inv_mi_values:
             mi = 1/inv_mi
@@ -129,8 +128,7 @@ for lam_val in lams:
                     X_subset, Y_subset = X_train[pts], y_train_c[pts]
                     ws.append(ridge_1d(X_subset[:, dim_ind], Y_subset, priv_aware_lam[dim_ind]))
                 variances[dim_ind] = np.var(ws, ddof=1)
-            pickle.dump(variances, open(f'data/C={C}_{data}_{lam_val}_variances.pkl', 'wb'))
-
+            
             priv_aware_mses = []
             for trial in range(NUM_TRIALS):
                 print(trial)
@@ -145,8 +143,7 @@ for lam_val in lams:
                     release.append(w)
                 y_pred_closed = ridge_pred(X_test, release) + y_mean
                 priv_aware_mses.append(mean_squared_error(y_pred_closed, y_test))
-            print(f'C={C}, priv aware mse: ', np.mean(priv_aware_mses))
-            all_mses[C] = (priv_obl_mses, priv_aware_mses)
+            print(f'C={C}, inv budget={inv_mi}, priv aware mse: ', np.mean(priv_aware_mses))
+            all_mses[inv_mi] = (priv_obl_mses, priv_aware_mses)
 
         pickle.dump(all_mses, open(f'results/{data}_{lam_val}_mses.pkl', 'wb'))
-        pickle.dump(all_lams, open(f'data/{data}_{lam_val}_lams.pkl', 'wb'))
