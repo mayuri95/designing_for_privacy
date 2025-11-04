@@ -18,12 +18,38 @@ NUM_TRIALS = 1000
 
 inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
-
+ 
 lams = [0.1, ('exact', 0.), ('exact', 16), ('exact', 1024)]
-
 datasets = [datasets[int(sys.argv[1])]]
 lams = [lams[int(sys.argv[2])]]
 print(datasets, lams)
+
+def create_subsets(X_train, num_subsets):
+    subsets = {}
+    num_dims = X_train.shape[1]
+    for num_subsets in range(NUM_SUBSETS):
+        pts = poisson_sample(X_train)
+        subsets[num_subsets] = pts
+    return subsets
+
+def size_effective(subsets):
+    m = [1./len(subsets[k]) for k in subsets]
+    print('size eff', 1./np.average(m))
+    return 1./np.average(m)
+
+def get_variances(subsets, lams, X_train, y_train_c):
+    variances = {}
+    n, d = X_train.shape
+    for dim_ind in range(d):
+        opt_lam0 = lams[dim_ind]
+        ws = []
+        for subset_ind in range(NUM_SUBSETS):
+            pts = subsets[subset_ind]
+            X_subset, Y_subset = X_train[pts], y_train_c[pts]
+            ws.append(ridge_1d(X_subset[:, dim_ind], Y_subset, opt_lam0))
+        variances[dim_ind] = np.var(ws, ddof=1)
+    return variances
+
 for lam_val in lams:    
     for data in datasets:
         all_mses, all_lams = {}, {}
@@ -46,15 +72,18 @@ for lam_val in lams:
         X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
         X_test  = pca.transform(X_test)
         n, d = X_train.shape
+        print(f'n={n}, d={d}')
         y_mean = y_train.mean()
         y_train_c = y_train - y_mean
 
         XtX = X_train.T @ X_train
         Xty = X_train.T @ y_train_c
         w_ref = solve(XtX, Xty)
+        subsets = create_subsets(X_train, NUM_SUBSETS)
+        size_eff = size_effective(subsets)
 
         resid = y_train_c - X_train @ w_ref
-        sigma2_hat = float((resid @ resid) / (n-d)) # divide by df
+        sigma2_hat = float((resid @ resid) / (size_eff-d)) # divide by df
         y_pred_base = ridge_pred(X_test, w_ref) + y_mean
         base_mse = mean_squared_error(y_pred_base, y_test)
         print('non-private baseline mse: ', base_mse)
@@ -63,26 +92,14 @@ for lam_val in lams:
         if type(lam_val) == tuple:
             assert lam_val[0] == 'exact'
             if lam_val[1] == 0:
-                base_C = 0
+                base_C = 0.
             else:
-                mi_to_opt = 1./lam_val[1]
-                base_C = w_dim /(2*mi_to_opt)
+                mi_to_optimize = 1./lam_val[1]
+                base_C = w_dim / (2*mi_to_optimize)
             opt_lams = [(base_C+1)*sigma2_hat/w_ref[ind]**2 for ind in range(len(w_ref))]
         else:
             opt_lams = [lam_val for ind in range(len(w_ref))]
-        base_variances = {}
-        subsets = {}
-        all_lams[0] = opt_lams
-        for dim_ind in range(d):
-            opt_lam0 = opt_lams[dim_ind]
-            ws = []
-            subsets[dim_ind] = []
-            for num_subsets in range(NUM_SUBSETS):
-                pts = poisson_sample(X_train)
-                subsets[dim_ind].append(pts)
-                X_subset, Y_subset = X_train[pts], y_train_c[pts]
-                ws.append(ridge_1d(X_subset[:, dim_ind], Y_subset, opt_lam0))
-            base_variances[dim_ind] = np.var(ws, ddof=1)
+        base_variances = get_variances(subsets, opt_lams, X_train, y_train_c)
 
         for inv_mi in inv_mi_values:
             mi = 1/inv_mi
@@ -93,7 +110,7 @@ for lam_val in lams:
                 unnoised_ws = []
                 release = []
                 for dim_ind in range(d):
-                    chosen_pts = subsets[dim_ind][np.random.choice(range(NUM_SUBSETS))]
+                    chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
                     opt_lam0 = opt_lams[dim_ind]
                     w = ridge_1d(
                         X_train[chosen_pts][:, dim_ind],
@@ -102,9 +119,8 @@ for lam_val in lams:
                     release.append(w)
                 y_pred_closed = ridge_pred(X_test, release) + y_mean
                 priv_obl_mses.append(mean_squared_error(y_pred_closed, y_test))
-            print(f'mi={mi}, C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
+            print(f'inv mi={inv_mi}, C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
 
-            variances = {}
             mi_to_opt = None
             correction_factor = (C+1)
             corrected = False
@@ -119,23 +135,15 @@ for lam_val in lams:
                     corrected = True
             if not corrected:
                 priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
-            all_lams[C] = priv_aware_lam
-            for dim_ind in range(d):
-                ws = []
-                dim_subsets = subsets[dim_ind]
-                for subset_ind in range(NUM_SUBSETS):
-                    pts = dim_subsets[subset_ind]
-                    X_subset, Y_subset = X_train[pts], y_train_c[pts]
-                    ws.append(ridge_1d(X_subset[:, dim_ind], Y_subset, priv_aware_lam[dim_ind]))
-                variances[dim_ind] = np.var(ws, ddof=1)
-            
+            variances = get_variances(subsets, priv_aware_lam, X_train, y_train_c)           
+ 
             priv_aware_mses = []
             for trial in range(NUM_TRIALS):
                 print(trial)
                 unnoised_ws = []
                 release = []
                 for dim_ind in range(d):
-                    chosen_pts = subsets[dim_ind][np.random.choice(range(NUM_SUBSETS))]
+                    chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
                     w = ridge_1d(
                         X_train[chosen_pts][:, dim_ind],
                         y_train_c[chosen_pts], priv_aware_lam[dim_ind])
