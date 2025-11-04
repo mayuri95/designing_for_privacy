@@ -1,0 +1,10 @@
+uv run python3 -u search_baselines.py 0 0 > baselines_0_0.out 2>&1 &
+uv run python3 -u search_baselines.py 1 0 > baselines_1_0.out 2>&1 &
+uv run python3 -u search_baselines.py 2 0 > baselines_2_0.out 2>&1 &
+uv run python3 -u search_baselines.py 3 0 > baselines_3_0.out 2>&1 &
+uv run python3 -u search_baselines.py 4 0 > baselines_4_0.out 2>&1 &
+uv run python3 -u search_baselines.py 0 1 > baselines_0_1.out 2>&1 &
+uv run python3 -u search_baselines.py 1 1 > baselines_1_1.out 2>&1 &
+uv run python3 -u search_baselines.py 2 1 > baselines_2_1.out 2>&1 &
+uv run python3 -u search_baselines.py 3 1 > baselines_3_1.out 2>&1 &
+uv run python3 -u search_baselines.py 4 1 > baselines_4_1.out 2>&1 &

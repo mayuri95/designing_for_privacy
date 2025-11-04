@@ -11,3 +11,5 @@ pac_private_gd/orig_data*
 *.out
 pyproject.toml
 uv.lock
+tmp/*
+
