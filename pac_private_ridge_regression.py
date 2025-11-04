@@ -14,15 +14,16 @@ from sklearn.decomposition import PCA, FastICA
 TEST_SIZE   = 0.2
 RANDOM_SEED = 42
 NUM_SUBSETS = 1024
-NUM_TRIALS = 1000
+NUM_TRIALS = 1
 
 C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
 datasets = ['wine_white', 'wine_red', 'housing']
 
 lams = [0.1, ('exact', 0.), ('exact', 1/16), ('exact', 1/1024)]
-datasets = [datasets[int(sys.argv[1])]]
-lams = [lams[int(sys.argv[2])]]
-print(datasets, lams)
+
+# datasets = [datasets[int(sys.argv[1])]]
+# lams = [lams[int(sys.argv[2])]]
+# print(datasets, lams)
 for lam_val in lams:    
     for data in datasets:
         all_mses, all_lams = {}, {}
@@ -99,17 +100,21 @@ for lam_val in lams:
                 priv_obl_mses.append(mean_squared_error(y_pred_closed, y_test))
             print(f'C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
 
-
             variances = {}
             mi_to_opt = None
             correction_factor = (C+1)
+            corrected = False
             if type(lam_val) == tuple:
                 assert lam_val[0] == 'exact'
-                if C-base_C < 1e-12:
+                if abs(C-base_C) < 1e-12:
                     priv_aware_lam = copy.deepcopy(opt_lams)
-            else:
-                correction_factor = (C+1) / (base_C+1)
-            priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
+                    corrected = True
+                else:
+                    correction_factor = (C+1) / (base_C+1)
+                    priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
+                    corrected = True
+            if not corrected:
+                priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
             all_lams[C] = priv_aware_lam
             for dim_ind in range(d):
                 ws = []
@@ -138,5 +143,5 @@ for lam_val in lams:
             print(f'C={C}, priv aware mse: ', np.mean(priv_aware_mses))
             all_mses[C] = (priv_obl_mses, priv_aware_mses)
 
-        pickle.dump(all_mses, open(f'results/{data}_{lam_val}_mses.pkl', 'wb'))
+        pickle.dump(all_mses, open(f'tmp/{data}_{lam_val}_mses.pkl', 'wb'))
         pickle.dump(all_lams, open(f'data/{data}_{lam_val}_lams.pkl', 'wb'))
