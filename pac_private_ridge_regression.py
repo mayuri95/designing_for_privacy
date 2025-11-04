@@ -14,16 +14,16 @@ from sklearn.decomposition import PCA, FastICA
 TEST_SIZE   = 0.2
 RANDOM_SEED = 42
 NUM_SUBSETS = 1024
-NUM_TRIALS = 1
+NUM_TRIALS = 250
 
-C_values = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0]
+inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
 
-lams = [0.1, ('exact', 0.), ('exact', 1/16), ('exact', 1/1024)]
+lams = [0.1, ('exact', 0.), ('exact', 16), ('exact', 1024)]
 
-# datasets = [datasets[int(sys.argv[1])]]
-# lams = [lams[int(sys.argv[2])]]
-# print(datasets, lams)
+datasets = [datasets[int(sys.argv[1])]]
+lams = [lams[int(sys.argv[2])]]
+print(datasets, lams)
 for lam_val in lams:    
     for data in datasets:
         all_mses, all_lams = {}, {}
@@ -58,15 +58,18 @@ for lam_val in lams:
         y_pred_base = ridge_pred(X_test, w_ref) + y_mean
         base_mse = mean_squared_error(y_pred_base, y_test)
         print('non-private baseline mse: ', base_mse)
+        w_dim = w_ref.shape[0]
         base_C = 0.
         if type(lam_val) == tuple:
             assert lam_val[0] == 'exact'
-            mi_to_opt = lam_val[1]
-            if mi_to_opt != 0:
-                base_C = 1/(2*mi_to_opt)
+            if lam_val[1] == 0:
+                base_C = 0
+            else:
+                mi_to_opt = 1./lam_val[1]
+                base_C = w_dim /(2*mi_to_opt)
             opt_lams = [(base_C+1)*sigma2_hat/w_ref[ind]**2 for ind in range(len(w_ref))]
         else:
-            opt_lams = [lam_val for ind in range(len(w_ref))]
+            opt_lams = [lam_value for ind in range(len(w_ref))]
         base_variances = {}
         subsets = {}
         all_lams[0] = opt_lams
@@ -82,10 +85,12 @@ for lam_val in lams:
             base_variances[dim_ind] = np.var(ws, ddof=1)
         pickle.dump(base_variances, open(f'data/baseline_{data}_{lam_val}_variances.pkl', 'wb'))
 
-        for C in C_values:
+        for inv_mi in inv_mi_values:
+            mi = 1/inv_mi
+            C = w_dim / (2*mi)
             priv_obl_mses = []
             for trial in range(NUM_TRIALS):
-                # print(trial)
+                print(trial)
                 unnoised_ws = []
                 release = []
                 for dim_ind in range(d):
@@ -98,7 +103,7 @@ for lam_val in lams:
                     release.append(w)
                 y_pred_closed = ridge_pred(X_test, release) + y_mean
                 priv_obl_mses.append(mean_squared_error(y_pred_closed, y_test))
-            print(f'C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
+            print(f'mi={mi}, C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
 
             variances = {}
             mi_to_opt = None
@@ -143,5 +148,5 @@ for lam_val in lams:
             print(f'C={C}, priv aware mse: ', np.mean(priv_aware_mses))
             all_mses[C] = (priv_obl_mses, priv_aware_mses)
 
-        pickle.dump(all_mses, open(f'tmp/{data}_{lam_val}_mses.pkl', 'wb'))
+        pickle.dump(all_mses, open(f'results/{data}_{lam_val}_mses.pkl', 'wb'))
         pickle.dump(all_lams, open(f'data/{data}_{lam_val}_lams.pkl', 'wb'))
