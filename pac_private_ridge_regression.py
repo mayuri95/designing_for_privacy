@@ -69,7 +69,7 @@ for lam_val in lams:
                 base_C = w_dim /(2*mi_to_opt)
             opt_lams = [(base_C+1)*sigma2_hat/w_ref[ind]**2 for ind in range(len(w_ref))]
         else:
-            opt_lams = [lam_value for ind in range(len(w_ref))]
+            opt_lams = [lam_val for ind in range(len(w_ref))]
         base_variances = {}
         subsets = {}
         all_lams[0] = opt_lams
