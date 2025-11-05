@@ -155,7 +155,7 @@ def find_e0(X, y, num_classes, mu):
 
 # Whiten the data using PCA, and drop the zero-variance dimensions
 def pca(X_train, X_test, whiten, tol=1e-6):
-    pca = PCA(whiten=False, random_state=42, n_components=0.99)
+    pca = PCA(whiten=False, random_state=42, n_components=0.95)
     X_train_pca = pca.fit_transform(X_train)
     print(X_train_pca.shape)
     # get the non-zero eigenvalue components
