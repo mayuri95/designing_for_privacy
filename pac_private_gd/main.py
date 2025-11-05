@@ -20,6 +20,7 @@ mu = 1.
 T=50
 e0_type_list = ['exact', 0.01, 0.1, 0.1]
 dataset_list = [
+    'credit',
     'mnist_0_vs_7',
     'mnist_7_vs_9',
 ]
