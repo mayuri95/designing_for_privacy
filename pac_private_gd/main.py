@@ -18,7 +18,7 @@ T_list = [50]
 num_trials = 250
 mu = 1.
 T=50
-e0_type_list = ['exact', 0.01, 0.1, 0.1]
+e0_type_list = ['exact', 0.01, 0.1, 1.0]
 dataset_list = [
     'credit',
     'mnist_0_vs_7',
