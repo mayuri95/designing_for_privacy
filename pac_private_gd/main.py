@@ -15,7 +15,7 @@ import gc
 budget_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 nonexact_budget_list = [4, 16, 64, 256, 1024]
 T_list = [50]
-num_trials = 250
+num_trials = 500
 mu = 1.
 T=50
 e0_type_list = ['exact', 0.01, 0.1, 1.0]
@@ -25,7 +25,6 @@ dataset_list = [
     'mnist_7_vs_9',
 ]
 budget_list = [budget_list[int(sys.argv[1])]]
-dataset_list = [dataset_list[int(sys.argv[2])]]
 print(budget_list)
 for dataset in dataset_list:
     print(dataset)
