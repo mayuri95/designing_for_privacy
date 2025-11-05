@@ -9,29 +9,32 @@ import os
 import data
 import pickle
 import sys
+import gc
 
 # run as budget ind, e0 ind, dataset ind
-budget_list = [4, 16, 64, 256, 1024] 
+budget_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+nonexact_budget_list = [4, 16, 64, 256, 1024]
 T_list = [50]
 num_trials = 250
 mu = 1.
 T=50
-e0_type_list = [0.01, 0.1, 1.0]
+e0_type_list = ['exact', 0.01, 0.1, 0.1]
 dataset_list = [
     'mnist_0_vs_7',
     'mnist_7_vs_9',
-    'credit'
 ]
-e0_type_list = [e0_type_list[int(sys.argv[1])]] # args: 0,1,2
-dataset_list = [dataset_list[int(sys.argv[2])]] # args: 0,1,2
-print(e0_type_list)
+budget_list = [budget_list[int(sys.argv[1])]]
+dataset_list = [dataset_list[int(sys.argv[2])]]
+print(budget_list)
 for dataset in dataset_list:
     print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     e0 = find_e0(X, y, num_classes, mu)
-    print(np.linalg.norm(e0))
+    print(X.shape, np.linalg.norm(e0))
     for inv_mi_budget in budget_list:
         for e0_type in e0_type_list:
+            if e0_type != 'exact' and inv_mi_budget not in nonexact_budget_list:
+                continue
             d = {}
             for privacy_aware in [True, False]:
                 accs = []
@@ -51,8 +54,10 @@ for dataset in dataset_list:
                     )
                     print(trial_ind, test_acc)
                     accs.append(test_acc)
+                    del train_loss, cla_loss
+                    gc.collect()
                 d[privacy_aware] = accs
                 test_accs = [k[0] for k in accs]
                 print(privacy_aware, e0_type, inv_mi_budget, np.average(test_accs), np.std(test_accs))
-            fname = f'e0_results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
+            fname = f'results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
             pickle.dump(d, open(fname, 'wb'))
