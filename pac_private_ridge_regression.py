@@ -19,8 +19,9 @@ NUM_TRIALS = 1000
 inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
  
-lams = [0.1, ('exact', 0.), ('exact', 16), ('exact', 1024)]
+lams = [('exact', 0.)]
 datasets = [datasets[int(sys.argv[1])]]
+snr_types = [0.01, 0.1, 1.0]
 lams = [lams[int(sys.argv[2])]]
 print(datasets, lams)
 
@@ -50,108 +51,118 @@ def get_variances(subsets, lams, X_train, y_train_c):
         variances[dim_ind] = np.var(ws, ddof=1)
     return variances
 
+def get_snr_ratio(X_train, y_train_c, size_eff):
+    XtX = X_train.T @ X_train
+    Xty = X_train.T @ y_train_c
+    w_ref = solve(XtX, Xty)
+
+    resid = y_train_c - X_train @ w_ref
+    sigma2_hat = float((resid @ resid) / (size_eff-d)) # divide by df
+    y_pred_base = ridge_pred(X_test, w_ref) + y_mean
+    base_mse = mean_squared_error(y_pred_base, y_test)
+    print('non-private baseline mse: ', base_mse)
+    snrs = [sigma2_hat/w_ref[ind]**2 for ind in range(len(w_ref))]
+    return w_ref, snrs
+
+
 for lam_val in lams:    
     for data in datasets:
-        all_mses, all_lams = {}, {}
-        if data == 'wine_red':
-            X, y = load_wine_quality(red=True)
-        elif data == 'wine_white':
-            X, y = load_wine_quality(red=False)
-        elif data == 'housing':
-            X, y = load_cali_housing()
+        for snr_type in snr_types:
+            all_mses = {}
+            if data == 'wine_red':
+                X, y = load_wine_quality(red=True)
+            elif data == 'wine_white':
+                X, y = load_wine_quality(red=False)
+            elif data == 'housing':
+                X, y = load_cali_housing()
 
-        # Train/test split and standardize X (fit on train)
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=TEST_SIZE, random_state=RANDOM_SEED
-        )
-        scaler = StandardScaler().fit(X_train)
-        X_train = scaler.transform(X_train)
-        X_test  = scaler.transform(X_test)
+            # Train/test split and standardize X (fit on train)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=TEST_SIZE, random_state=RANDOM_SEED
+            )
+            scaler = StandardScaler().fit(X_train)
+            X_train = scaler.transform(X_train)
+            X_test  = scaler.transform(X_test)
 
-        pca = PCA(whiten=True, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
-        X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
-        X_test  = pca.transform(X_test)
-        n, d = X_train.shape
-        print(f'n={n}, d={d}')
-        y_mean = y_train.mean()
-        y_train_c = y_train - y_mean
+            pca = PCA(whiten=True, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
+            X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
+            X_test  = pca.transform(X_test)
+            n, d = X_train.shape
+            print(f'n={n}, d={d}')
+            y_mean = y_train.mean()
+            y_train_c = y_train - y_mean
 
-        XtX = X_train.T @ X_train
-        Xty = X_train.T @ y_train_c
-        w_ref = solve(XtX, Xty)
-        subsets = create_subsets(X_train, NUM_SUBSETS)
-        size_eff = size_effective(subsets)
-
-        resid = y_train_c - X_train @ w_ref
-        sigma2_hat = float((resid @ resid) / (size_eff-d)) # divide by df
-        y_pred_base = ridge_pred(X_test, w_ref) + y_mean
-        base_mse = mean_squared_error(y_pred_base, y_test)
-        print('non-private baseline mse: ', base_mse)
-        w_dim = w_ref.shape[0]
-        base_C = 0.
-        if type(lam_val) == tuple:
-            assert lam_val[0] == 'exact'
-            if lam_val[1] == 0:
-                base_C = 0.
-            else:
-                mi_to_optimize = 1./lam_val[1]
-                base_C = w_dim / (2*mi_to_optimize)
-            opt_lams = [(base_C+1)*sigma2_hat/w_ref[ind]**2 for ind in range(len(w_ref))]
-        else:
-            opt_lams = [lam_val for ind in range(len(w_ref))]
-        base_variances = get_variances(subsets, opt_lams, X_train, y_train_c)
-
-        for inv_mi in inv_mi_values:
-            mi = 1/inv_mi
-            C = w_dim / (2*mi)
-            priv_obl_mses = []
-            for trial in range(NUM_TRIALS):
-                print(trial)
-                unnoised_ws = []
-                release = []
-                for dim_ind in range(d):
-                    chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
-                    opt_lam0 = opt_lams[dim_ind]
-                    w = ridge_1d(
-                        X_train[chosen_pts][:, dim_ind],
-                        y_train_c[chosen_pts], opt_lam0)
-                    w += np.random.normal(0, np.sqrt(C*base_variances[dim_ind]))
-                    release.append(w)
-                y_pred_closed = ridge_pred(X_test, release) + y_mean
-                priv_obl_mses.append(mean_squared_error(y_pred_closed, y_test))
-            print(f'inv mi={inv_mi}, C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
-
-            mi_to_opt = None
-            correction_factor = (C+1)
-            corrected = False
+            subsets = create_subsets(X_train, NUM_SUBSETS)
+            size_eff = size_effective(subsets)
+            w_ref, snrs = get_snr_ratio(X_train, y_train_c, size_eff)
+            if snr_type != 'opt':
+                snrs = np.ones_like(snrs) * snr_type
+            
+            w_dim = w_ref.shape[0]
+            base_C = 0.
             if type(lam_val) == tuple:
                 assert lam_val[0] == 'exact'
-                if abs(C-base_C) < 1e-12:
-                    priv_aware_lam = copy.deepcopy(opt_lams)
-                    corrected = True
+                if lam_val[1] == 0:
+                    base_C = 0.
                 else:
-                    correction_factor = (C+1) / (base_C+1)
-                    priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
-                    corrected = True
-            if not corrected:
-                priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
-            variances = get_variances(subsets, priv_aware_lam, X_train, y_train_c)           
- 
-            priv_aware_mses = []
-            for trial in range(NUM_TRIALS):
-                print(trial)
-                unnoised_ws = []
-                release = []
-                for dim_ind in range(d):
-                    chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
-                    w = ridge_1d(
-                        X_train[chosen_pts][:, dim_ind],
-                        y_train_c[chosen_pts], priv_aware_lam[dim_ind])
-                    w += np.random.normal(0, np.sqrt(C*variances[dim_ind]))
-                    release.append(w)
-                y_pred_closed = ridge_pred(X_test, release) + y_mean
-                priv_aware_mses.append(mean_squared_error(y_pred_closed, y_test))
-            print(f'C={C}, inv budget={inv_mi}, priv aware mse: ', np.mean(priv_aware_mses))
-            all_mses[inv_mi] = (priv_obl_mses, priv_aware_mses)
+                    mi_to_optimize = 1./lam_val[1]
+                    base_C = w_dim / (2*mi_to_optimize)
+                opt_lams = [(base_C+1)*snrs[ind] for ind in range(len(w_ref))]
+            else:
+                opt_lams = [lam_val for ind in range(len(w_ref))]
+            base_variances = get_variances(subsets, opt_lams, X_train, y_train_c)
 
-        pickle.dump(all_mses, open(f'results/{data}_{lam_val}_mses.pkl', 'wb'))
+            for inv_mi in inv_mi_values:
+                mi = 1/inv_mi
+                C = w_dim / (2*mi)
+                priv_obl_mses = []
+                for trial in range(NUM_TRIALS):
+                    print(trial)
+                    unnoised_ws = []
+                    release = []
+                    for dim_ind in range(d):
+                        chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
+                        opt_lam0 = opt_lams[dim_ind]
+                        w = ridge_1d(
+                            X_train[chosen_pts][:, dim_ind],
+                            y_train_c[chosen_pts], opt_lam0)
+                        w += np.random.normal(0, np.sqrt(C*base_variances[dim_ind]))
+                        release.append(w)
+                    y_pred_closed = ridge_pred(X_test, release) + y_mean
+                    priv_obl_mses.append(mean_squared_error(y_pred_closed, y_test))
+                print(f'inv mi={inv_mi}, C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
+
+                mi_to_opt = None
+                correction_factor = (C+1)
+                corrected = False
+                if type(lam_val) == tuple:
+                    assert lam_val[0] == 'exact'
+                    if abs(C-base_C) < 1e-12:
+                        priv_aware_lam = copy.deepcopy(opt_lams)
+                        corrected = True
+                    else:
+                        correction_factor = (C+1) / (base_C+1)
+                        priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
+                        corrected = True
+                if not corrected:
+                    priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
+                variances = get_variances(subsets, priv_aware_lam, X_train, y_train_c)           
+     
+                priv_aware_mses = []
+                for trial in range(NUM_TRIALS):
+                    print(trial)
+                    unnoised_ws = []
+                    release = []
+                    for dim_ind in range(d):
+                        chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
+                        w = ridge_1d(
+                            X_train[chosen_pts][:, dim_ind],
+                            y_train_c[chosen_pts], priv_aware_lam[dim_ind])
+                        w += np.random.normal(0, np.sqrt(C*variances[dim_ind]))
+                        release.append(w)
+                    y_pred_closed = ridge_pred(X_test, release) + y_mean
+                    priv_aware_mses.append(mean_squared_error(y_pred_closed, y_test))
+                print(f'C={C}, inv budget={inv_mi}, priv aware mse: ', np.mean(priv_aware_mses))
+                all_mses[inv_mi] = (priv_obl_mses, priv_aware_mses)
+
+            pickle.dump(all_mses, open(f'results/baseline_{data}_{lam_val}_{snr_type}_mses.pkl', 'wb'))
