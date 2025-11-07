@@ -11,17 +11,19 @@ from utils import *
 import sys
 import copy
 from sklearn.decomposition import PCA, FastICA
+
 TEST_SIZE   = 0.2
 RANDOM_SEED = 42
 NUM_SUBSETS = 1024
 NUM_TRIALS = 1000
 
 inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+nonexact_inv_mi_values = [4, 16, 64, 256, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
- 
-lams = [('exact', 0.)]
+
+lams = [('exact', 0.), ('exact', 16), ('exact', 1024)]
+snr_types = ['opt', 0.01, 0.1, 1.0]
 datasets = [datasets[int(sys.argv[1])]]
-snr_types = [0.01, 0.1, 1.0]
 lams = [lams[int(sys.argv[2])]]
 print(datasets, lams)
 
@@ -113,6 +115,16 @@ for lam_val in lams:
             base_variances = get_variances(subsets, opt_lams, X_train, y_train_c)
 
             for inv_mi in inv_mi_values:
+                to_solve = True
+                if inv_mi not in nonexact_inv_mi_values:
+                    if lam_val != ('exact', 0.):
+                        to_solve = False
+                    if snr_type != 'opt':
+                        to_solve = False
+                if lam_val != ('exact', 0.) and snr_type != 'opt':
+                    to_solve = False
+                if not to_solve:
+                    continue
                 mi = 1/inv_mi
                 C = w_dim / (2*mi)
                 priv_obl_mses = []
@@ -165,4 +177,4 @@ for lam_val in lams:
                 print(f'C={C}, inv budget={inv_mi}, priv aware mse: ', np.mean(priv_aware_mses))
                 all_mses[inv_mi] = (priv_obl_mses, priv_aware_mses)
 
-            pickle.dump(all_mses, open(f'results/baseline_{data}_{lam_val}_{snr_type}_mses.pkl', 'wb'))
+            pickle.dump(all_mses, open(f'results/{data}_{lam_val}_{snr_type}_mses.pkl', 'wb'))
