@@ -21,7 +21,7 @@ inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 nonexact_inv_mi_values = [4, 16, 64, 256, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
 
-lams = [('exact', 0.), ('exact', 16), ('exact', 1024)]
+lams = [('exact', 0.), ('exact', 16), ('exact', 1024), 0.1]
 snr_types = ['opt', 0.01, 0.1, 1.0]
 datasets = [datasets[int(sys.argv[1])]]
 lams = [lams[int(sys.argv[2])]]
