@@ -35,11 +35,6 @@ def create_subsets(X_train, num_subsets):
         subsets[num_subsets] = pts
     return subsets
 
-def size_effective(subsets):
-    m = [1./len(subsets[k]) for k in subsets]
-    print('size eff', 1./np.average(m))
-    return 1./np.average(m)
-
 def get_variances(subsets, lams, X_train, y_train_c):
     variances = {}
     n, d = X_train.shape
@@ -53,13 +48,14 @@ def get_variances(subsets, lams, X_train, y_train_c):
         variances[dim_ind] = np.var(ws, ddof=1)
     return variances
 
-def get_snr_ratio(X_train, y_train_c, size_eff):
+def get_snr_ratio(X_train, y_train_c):
     XtX = X_train.T @ X_train
     Xty = X_train.T @ y_train_c
     w_ref = solve(XtX, Xty)
+    n, d = X_train.shape
 
     resid = y_train_c - X_train @ w_ref
-    sigma2_hat = float((resid @ resid) / (size_eff-d)) # divide by df
+    sigma2_hat = float((resid @ resid) / (n-d)) # divide by df
     y_pred_base = ridge_pred(X_test, w_ref) + y_mean
     base_mse = mean_squared_error(y_pred_base, y_test)
     print('non-private baseline mse: ', base_mse)
@@ -95,8 +91,7 @@ for lam_val in lams:
             y_train_c = y_train - y_mean
 
             subsets = create_subsets(X_train, NUM_SUBSETS)
-            size_eff = size_effective(subsets)
-            w_ref, snrs = get_snr_ratio(X_train, y_train_c, size_eff)
+            w_ref, snrs = get_snr_ratio(X_train, y_train_c)
             if snr_type != 'opt':
                 snrs = np.ones_like(snrs) * snr_type
             
