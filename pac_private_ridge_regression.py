@@ -122,21 +122,20 @@ for lam_val in lams:
                     continue
                 mi = 1/inv_mi
                 C = w_dim / (2*mi)
-                priv_obl_mses = []
-                for trial in range(NUM_TRIALS):
-                    print(trial)
-                    unnoised_ws = []
-                    release = []
-                    for dim_ind in range(d):
-                        chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
-                        opt_lam0 = opt_lams[dim_ind]
-                        w = ridge_1d(
-                            X_train[chosen_pts][:, dim_ind],
-                            y_train_c[chosen_pts], opt_lam0)
-                        w += np.random.normal(0, np.sqrt(C*base_variances[dim_ind]))
-                        release.append(w)
-                    y_pred_closed = ridge_pred(X_test, release) + y_mean
-                    priv_obl_mses.append(mean_squared_error(y_pred_closed, y_test))
+
+                priv_obl_mses = pac_private_ridge_regression(
+                    X=X_train,
+                    y_c=y_train_c,
+                    subsets=subsets,
+                    lambs=opt_lams,
+                    C=C,
+                    variances=base_variances,
+                    X_test=X_test,
+                    y_test=y_test,
+                    y_mean=y_mean,
+                    num_trials=NUM_TRIALS
+                )
+
                 print(f'inv mi={inv_mi}, C={C}, priv oblivious mse: ', np.mean(priv_obl_mses))
 
                 mi_to_opt = None
@@ -155,20 +154,19 @@ for lam_val in lams:
                     priv_aware_lam = [correction_factor * opt_lams[dim_ind] for dim_ind in range(len(opt_lams))]
                 variances = get_variances(subsets, priv_aware_lam, X_train, y_train_c)           
      
-                priv_aware_mses = []
-                for trial in range(NUM_TRIALS):
-                    print(trial)
-                    unnoised_ws = []
-                    release = []
-                    for dim_ind in range(d):
-                        chosen_pts = subsets[np.random.choice(range(NUM_SUBSETS))]
-                        w = ridge_1d(
-                            X_train[chosen_pts][:, dim_ind],
-                            y_train_c[chosen_pts], priv_aware_lam[dim_ind])
-                        w += np.random.normal(0, np.sqrt(C*variances[dim_ind]))
-                        release.append(w)
-                    y_pred_closed = ridge_pred(X_test, release) + y_mean
-                    priv_aware_mses.append(mean_squared_error(y_pred_closed, y_test))
+                priv_aware_mses = pac_private_ridge_regression(
+                    X=X_train,
+                    y_c=y_train_c,
+                    subsets=subsets,
+                    lambs=priv_aware_lam,
+                    C=C,
+                    variances=variances,
+                    X_test=X_test,
+                    y_test=y_test,
+                    y_mean=y_mean,
+                    num_trials=NUM_TRIALS
+                )
+                
                 print(f'C={C}, inv budget={inv_mi}, priv aware mse: ', np.mean(priv_aware_mses))
                 all_mses[inv_mi] = (priv_obl_mses, priv_aware_mses)
 

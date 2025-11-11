@@ -39,3 +39,20 @@ def poisson_sample(X):
         if np.random.rand() < 0.5:
             pts.append(i)
     return pts
+
+def pac_private_ridge_regression(X, y_c, subsets, lambs, C, variances, X_test, y_test, y_mean, num_trials):
+    all_mses = []
+    n, d = X.shape
+    num_subsets = len(subsets)
+    for trial in range(num_trials):
+        release = []
+        for dim_ind in range(d):
+            chosen_pts = subsets[np.random.choice(range(num_subsets))]
+            w = ridge_1d(
+                X[chosen_pts][:, dim_ind],
+                y_c[chosen_pts], lambs[dim_ind])
+            w += np.random.normal(0, np.sqrt(C*variances[dim_ind]))
+            release.append(w)
+        y_pred_closed = ridge_pred(X_test, release) + y_mean
+        all_mses.append(mean_squared_error(y_pred_closed, y_test))
+    return all_mses
