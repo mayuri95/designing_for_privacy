@@ -13,7 +13,7 @@ import sys
 # run as budget ind, e0 ind, dataset ind
 budget_list = [4, 16, 64, 256, 1024]
 T_list = [50]
-num_trials = 250
+num_trials = 500
 mu = 1.
 T=50
 dataset_list = [
@@ -30,8 +30,7 @@ print(budget_list, priv_oblivious_mi_budgets, dataset_list)
 for dataset in dataset_list:
     print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
-    e0 = find_e0(X, y, num_classes, mu)
-    print(np.linalg.norm(e0))
+    e0 = 0.1 * np.ones(X.shape[1])
     for inv_mi_budget in budget_list:
         for priv_oblivious_mi_budget in priv_oblivious_mi_budgets:
             d = {}
