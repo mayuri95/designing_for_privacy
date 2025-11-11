@@ -118,8 +118,8 @@ for lam_val in lams:
                         to_solve = False
                     if snr_type != 'opt':
                         to_solve = False
-                if lam_val != ('exact', 0.) and snr_type != 'opt':
-                    to_solve = False
+                # if lam_val != ('exact', 0.) and snr_type != 'opt':
+                #     to_solve = False
                 if not to_solve:
                     continue
                 mi = 1/inv_mi
