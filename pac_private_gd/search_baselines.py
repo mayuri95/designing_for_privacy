@@ -56,5 +56,5 @@ for dataset in dataset_list:
                 d[privacy_aware] = accs
                 test_accs = [k[0] for k in accs]
                 print(privacy_aware, inv_mi_budget, np.average(test_accs), np.std(test_accs))
-            fname = f'results/{dataset}_data_budget={inv_mi_budget}_baseline_priv_obl={priv_oblivious_mi_budget}.pkl'
+            fname = f'results/{dataset}_data_budget={inv_mi_budget}_baseline_e0={e0[0]}_priv_obl={priv_oblivious_mi_budget}.pkl'
             pickle.dump(d, open(fname, 'wb'))
