@@ -21,8 +21,8 @@ inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 nonexact_inv_mi_values = [4, 16, 64, 256, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
 
-lams = [('exact', 0.), ('exact', 16), ('exact', 1024), 0.1]
-snr_types = ['opt', 0.01, 0.1, 1.0]
+lams = [('exact', 0), ('exact', 16), ('exact', 1024)]
+snr_types = [10, 'opt']
 datasets = [datasets[int(sys.argv[1])]]
 lams = [lams[int(sys.argv[2])]]
 print(datasets, lams)
@@ -66,6 +66,8 @@ def get_snr_ratio(X_train, y_train_c):
 for lam_val in lams:    
     for data in datasets:
         for snr_type in snr_types:
+            if snr_type == 'opt' and lam_val != ('exact', 0.):
+                continue
             all_mses = {}
             if data == 'wine_red':
                 X, y = load_wine_quality(red=True)
@@ -116,8 +118,8 @@ for lam_val in lams:
                         to_solve = False
                     if snr_type != 'opt':
                         to_solve = False
-                if lam_val != ('exact', 0.) and snr_type != 'opt':
-                    to_solve = False
+                # if lam_val != ('exact', 0.) and snr_type != 'opt':
+                #     to_solve = False
                 if not to_solve:
                     continue
                 mi = 1/inv_mi
