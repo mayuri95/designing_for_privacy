@@ -21,11 +21,13 @@ inv_mi_values = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 nonexact_inv_mi_values = [4, 16, 64, 256, 1024]
 datasets = ['wine_white', 'wine_red', 'housing']
 
-lams = [('exact', 0), ('exact', 16), ('exact', 1024)]
-snr_types = [10, 'opt']
-datasets = [datasets[int(sys.argv[1])]]
-lams = [lams[int(sys.argv[2])]]
-print(datasets, lams)
+
+all_pairs = [(('exact', 0), 0.1), (('exact', 0), 1), (('exact', 0), 10),
+        (('exact', 0), 'opt'), (('exact', 16), 10), (('exact', 1024), 10)]
+all_pairs = [(('exact', 16), 0.1), (('exact', 1024), 0.1)]
+
+all_pairs = [all_pairs[int(sys.argv[1])]]
+datasets= [datasets[int(sys.argv[2])]]
 
 def create_subsets(X_train, num_subsets):
     subsets = {}
@@ -63,9 +65,10 @@ def get_snr_ratio(X_train, y_train_c):
     return w_ref, snrs
 
 
-for lam_val in lams:    
-    for data in datasets:
-        for snr_type in snr_types:
+for data in datasets:
+    for pair in all_pairs:
+            lam_val, snr_type = pair
+            print(lam_val, snr_type)
             if snr_type == 'opt' and lam_val != ('exact', 0.):
                 continue
             all_mses = {}
@@ -84,7 +87,7 @@ for lam_val in lams:
             X_train = scaler.transform(X_train)
             X_test  = scaler.transform(X_test)
 
-            pca = PCA(whiten=True, random_state=RANDOM_SEED)  # orthonormal columns, unit variance
+            pca = FastICA(random_state=RANDOM_SEED)  # orthonormal columns, unit variance
             X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
             X_test  = pca.transform(X_test)
             n, d = X_train.shape
@@ -118,8 +121,6 @@ for lam_val in lams:
                         to_solve = False
                     if snr_type != 'opt':
                         to_solve = False
-                # if lam_val != ('exact', 0.) and snr_type != 'opt':
-                #     to_solve = False
                 if not to_solve:
                     continue
                 mi = 1/inv_mi
