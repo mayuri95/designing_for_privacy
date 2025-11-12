@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, FastICA
 from sklearn.datasets import fetch_california_housing
 import json
 
@@ -75,7 +75,7 @@ for dataset in ['wine_quality_red', 'wine_quality_white', 'cali_housing']:
     X_train = scaler.transform(X_train)
     X_test  = scaler.transform(X_test)
 
-    pca = PCA(whiten=True, random_state=42)  # orthonormal columns, unit variance
+    pca = FastICA(random_state=42)  # orthonormal columns, unit variance
     X_train = pca.fit_transform(X_train)          # (n, r) where r = rank
     X_test  = pca.transform(X_test)
 
