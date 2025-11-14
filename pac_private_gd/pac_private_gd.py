@@ -39,7 +39,11 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
 
     train_loss = []
     cla_loss = [] # classification loss
-
+    y_pred = model(X_test)
+    y_pred_probs = torch.sigmoid(y_pred.view(-1)).detach().numpy()
+    y_pred_labels = (torch.sigmoid(y_pred) >= 0.5).float().view(-1, 1)
+    test_acc = accuracy_score(y_test, y_pred_labels.numpy())
+    print(f'starting acc: {test_acc}')
     for i in range(T):
         per_sample_grads = utils.get_per_sample_grads(model, loss_fn, X, y, mu).cpu().numpy()
 
@@ -76,9 +80,13 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
             train_loss.append(loss)
 
         if verbose:
-            print(L, mu, np.linalg.norm(model_update))
-            print(f"Iter {i+1}/{T}, Train Loss: {loss:.4f}")
-
+            # print(L, mu, np.linalg.norm(model_update))
+            
+            y_pred = model(X_test)
+            y_pred_probs = torch.sigmoid(y_pred.view(-1)).detach().numpy()
+            y_pred_labels = (torch.sigmoid(y_pred) >= 0.5).float().view(-1, 1)
+            test_acc = accuracy_score(y_test, y_pred_labels.numpy())
+            print(f"Iter {i+1}/{T}, Train Loss: {loss:.4f}, Test Acc: {test_acc}")
         del per_sample_grads
 
     # now that we have trained the model, calculate the test accuracy
