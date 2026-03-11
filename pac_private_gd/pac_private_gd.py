@@ -86,6 +86,9 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
     subsets = create_subsets(X)
     release_ind = np.random.choice(NUM_SUBSETS)
     p = np.array([1./NUM_SUBSETS for _ in range(NUM_SUBSETS)])
+    keys = sorted(subsets)
+    idx_lists = [np.asarray(subsets[i], dtype=np.intp) for i in keys]
+    lengths = np.fromiter((len(x) for x in idx_lists), dtype=np.intp)
     for i in range(T):
         print(f'iteration {i}')
         per_sample_grads = utils.get_per_sample_grads(model, loss_fn, X, y, mu).cpu().numpy()
@@ -94,8 +97,12 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
         for d_i in range(d):
 
             per_sample_grads_dim_i = per_sample_grads[:, d_i]
-            subset_grads = np.atleast_2d(
-                np.array([per_sample_grads_dim_i[subsets[i]].mean() for i in sorted(subsets)])).T
+            subset_grads = (
+                np.add.reduceat(
+                    per_sample_grads_dim_i[np.concatenate(idx_lists)],
+                    np.r_[0, np.cumsum(lengths[:-1])]
+                ) / lengths
+            )[:, None]
             grad_i_var = get_variance(p, subset_grads)
             grad_i_var = np.clip(grad_i_var, 1e-15, None)
 
