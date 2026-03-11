@@ -18,7 +18,7 @@ T_list = [50]
 num_trials = 500
 mu = 1.
 T=50
-e0_type_list = ['exact', 0.01, 0.1, 1.0]
+e0_type_list = ['exact']
 dataset_list = [
     'credit',
     'mnist_0_vs_7',
@@ -59,5 +59,5 @@ for dataset in dataset_list:
                 d[privacy_aware] = accs
                 test_accs = [k[0] for k in accs]
                 print(privacy_aware, e0_type, inv_mi_budget, np.average(test_accs), np.std(test_accs))
-            fname = f'results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
+            fname = f'composition_results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
             pickle.dump(d, open(fname, 'wb'))
