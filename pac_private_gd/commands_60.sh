@@ -15,7 +15,7 @@ for a in {0..9}; do
             VECLIB_MAXIMUM_THREADS=1 \
             NUMEXPR_NUM_THREADS=1 \
             TORCH_NUM_THREADS=1 \
-        uv run python3 -u "$a" "$b" "$c" &
+        uv run python3 -u main.py "$a" "$b" "$c" &
 
       core=$((core + 1))
     done
