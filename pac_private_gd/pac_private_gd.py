@@ -6,7 +6,7 @@ from models import LinearModel
 import utils
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, roc_auc_score
 
-NUM_SUBSETS=128
+NUM_SUBSETS=1024
 def est_L_diag(X, mu):
     X = X.numpy()
     n = X.shape[0]
@@ -84,6 +84,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
     print(f'starting acc: {test_acc}')
 
     subsets = create_subsets(X)
+    release_ind = np.random.choice(NUM_SUBSETS)
     p = np.array([1./NUM_SUBSETS for _ in range(NUM_SUBSETS)])
     for i in range(T):
         print(f'iteration {i}')
@@ -92,15 +93,13 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
 
         for d_i in range(d):
 
-            def grad_i_fn(): # return a torch scalar
-                return per_sample_grads[np.random.rand(num_features) < 0.5, d_i].mean().item()
-
             per_sample_grads_dim_i = per_sample_grads[:, d_i]
             subset_grads = np.atleast_2d(
                 np.array([per_sample_grads_dim_i[subsets[i]].mean() for i in sorted(subsets)])).T
             grad_i_var = get_variance(p, subset_grads)
+            grad_i_var = np.clip(grad_i_var, 1e-15, None)
+
             noise_lambda = C * grad_i_var
-            noise_lambda = np.clip(noise_lambda, 1e-10, None)
             if privacy_aware:
                 eta_i = utils.optimal_eta(mu=mu, T=T, C=C, e0=e0[d_i], var=grad_i_var)
             else:
@@ -109,12 +108,10 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
                 else:
                     oblivious_C = 0
                 eta_i = utils.optimal_eta(mu=mu, T=T, C=oblivious_C, e0=e0[d_i], var=grad_i_var)
-            assert eta_i >= 0
             eta_i = np.clip(eta_i, -L[d_i], L[d_i])
-            grad_i = grad_i_fn()
 
+            grad_i = per_sample_grads_dim_i[subsets[release_ind]].mean()
             grad_i +=  np.sqrt(C * grad_i_var) * np.random.randn()
-
             model_update[d_i] = -eta_i * grad_i
             p = update_p(p, subset_grads, grad_i, noise_lambda)
         utils.apply_update_vec(model, model_update)

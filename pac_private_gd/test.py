@@ -11,7 +11,7 @@ import pickle
 import sys
 
 # run as budget ind, e0 ind, dataset ind
-budget_list = [1/1024] 
+budget_list = [1024] 
 T_list = [50]
 num_trials = 1
 mu = 1.
