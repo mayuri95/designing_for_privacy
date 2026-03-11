@@ -11,7 +11,7 @@ import pickle
 import sys
 
 # run as budget ind, e0 ind, dataset ind
-budget_list = [None] 
+budget_list = [1/1024] 
 T_list = [50]
 num_trials = 1
 mu = 1.
@@ -29,7 +29,7 @@ for dataset in dataset_list:
     for inv_mi_budget in budget_list:
         for e0_type in e0_type_list:
             d = {}
-            for privacy_aware in [True, False]:
+            for privacy_aware in [True]:
                 accs = []
                 for trial_ind in range(num_trials):
                     train_loss, cla_loss, test_acc = pac_private_gd(
