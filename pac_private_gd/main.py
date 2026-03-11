@@ -15,6 +15,7 @@ import gc
 budget_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 nonexact_budget_list = [4, 16, 64, 256, 1024]
 T_list = [50]
+privacy_aware_list = [True, False]
 num_trials = 500
 mu = 1.
 T=50
@@ -25,7 +26,11 @@ dataset_list = [
     'mnist_7_vs_9',
 ]
 budget_list = [budget_list[int(sys.argv[1])]]
+privacy_aware_list = [privacy_aware_list[int(sys.argv[2])]]
+dataset_list = [dataset_list[int(sys.argv[3])]]
 print(budget_list)
+print(privacy_aware_list)
+print(dataset_list)
 for dataset in dataset_list:
     print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
@@ -35,8 +40,7 @@ for dataset in dataset_list:
         for e0_type in e0_type_list:
             if e0_type != 'exact' and inv_mi_budget not in nonexact_budget_list:
                 continue
-            d = {}
-            for privacy_aware in [True, False]:
+            for privacy_aware in privacy_aware_list:
                 accs = []
                 for trial_ind in range(num_trials):
                     train_loss, cla_loss, test_acc = pac_private_gd(
@@ -56,8 +60,7 @@ for dataset in dataset_list:
                     accs.append(test_acc)
                     del train_loss, cla_loss
                     gc.collect()
-                d[privacy_aware] = accs
                 test_accs = [k[0] for k in accs]
                 print(privacy_aware, e0_type, inv_mi_budget, np.average(test_accs), np.std(test_accs))
-            fname = f'composition_results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}.pkl'
-            pickle.dump(d, open(fname, 'wb'))
+                fname = f'composition_results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}_aware={privacy_aware}.pkl'
+                pickle.dump(accs, open(fname, 'wb'))
