@@ -28,7 +28,8 @@ dataset_list = [
 # (0,1,2,3,4) * (0,1) * 10 = 50 runs
 budget_list = [budget_list[int(sys.argv[1])]]
 privacy_aware_list = [privacy_aware_list[int(sys.argv[2])]]
-idx = int(sys.argv[3]) # 0,1,2,3,4
+dataset_list = [dataset_list[int(sys.argv[3])]]
+idx = int(sys.argv[4]) # 0,1,2,3,4
 print(budget_list)
 print(privacy_aware_list)
 print(dataset_list)
