@@ -81,7 +81,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
     y_pred_probs = torch.sigmoid(y_pred.view(-1)).detach().numpy()
     y_pred_labels = (torch.sigmoid(y_pred) >= 0.5).float().view(-1, 1)
     test_acc = accuracy_score(y_test, y_pred_labels.numpy())
-    print(f'starting acc: {test_acc}')
+    # print(f'starting acc: {test_acc}')
 
     subsets = create_subsets(X)
     release_ind = np.random.choice(NUM_SUBSETS)
@@ -90,7 +90,7 @@ def pac_private_gd(X, y, X_test, y_test, num_classes, mu, T, mi_budget, privacy_
     idx_lists = [np.asarray(subsets[i], dtype=np.intp) for i in keys]
     lengths = np.fromiter((len(x) for x in idx_lists), dtype=np.intp)
     for i in range(T):
-        print(f'iteration {i}')
+        # print(f'iteration {i}')
         per_sample_grads = utils.get_per_sample_grads(model, loss_fn, X, y, mu).cpu().numpy()
         model_update = np.zeros(d)
 

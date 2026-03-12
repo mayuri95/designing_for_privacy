@@ -12,11 +12,11 @@ import sys
 import gc
 
 # run as budget ind, e0 ind, dataset ind
-budget_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+budget_list = [4, 16, 64, 256, 1024]
 nonexact_budget_list = [4, 16, 64, 256, 1024]
 T_list = [50]
 privacy_aware_list = [True, False]
-num_trials = 500
+num_trials = 20
 mu = 1.
 T=50
 e0_type_list = ['exact']
@@ -25,14 +25,14 @@ dataset_list = [
     'mnist_0_vs_7',
     'mnist_7_vs_9',
 ]
+# (0,1,2,3,4) * (0,1) * 10 = 50 runs
 budget_list = [budget_list[int(sys.argv[1])]]
 privacy_aware_list = [privacy_aware_list[int(sys.argv[2])]]
-dataset_list = [dataset_list[int(sys.argv[3])]]
+idx = int(sys.argv[3]) # 0,1,2,3,4
 print(budget_list)
 print(privacy_aware_list)
 print(dataset_list)
 for dataset in dataset_list:
-    print(dataset)
     X, y, X_test, y_test, num_classes = data.load_dataset(dataset)
     e0 = find_e0(X, y, num_classes, mu)
     print(X.shape, np.linalg.norm(e0))
@@ -62,5 +62,5 @@ for dataset in dataset_list:
                     gc.collect()
                 test_accs = [k[0] for k in accs]
                 print(privacy_aware, e0_type, inv_mi_budget, np.average(test_accs), np.std(test_accs))
-                fname = f'composition_results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}_aware={privacy_aware}.pkl'
+                fname = f'composition_results/{dataset}_data_budget={inv_mi_budget}_e0={e0_type}_aware={privacy_aware}_{idx}.pkl'
                 pickle.dump(accs, open(fname, 'wb'))
