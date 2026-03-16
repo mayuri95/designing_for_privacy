@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from pac_private_gd import pac_private_gd
+from pac_private_gd_composition import pac_private_gd
 from utils import find_e0
 import pandas as pd
 import random
