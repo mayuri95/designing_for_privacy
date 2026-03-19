@@ -12,13 +12,12 @@ import sys
 
 # run as budget ind, e0 ind, dataset ind
 budget_list = [1024] 
-T_list = [50]
 num_trials = 1
 mu = 1.
 T=50
 e0_type_list = ['exact']
 dataset_list = [
-    'mnist_7_vs_9',
+    'credit',
 ]
 
 for dataset in dataset_list:
